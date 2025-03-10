@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            height: 100vh;
+            background-color: #000000;
+            color: #fff;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+        }
+
+        .left-section {
+            width: 50%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .left-section img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .right-section {
+            background-color: #000000;
+            width: 50%;
+            padding: 80px 60px;
+            margin-top: 50px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            margin-left: 190px;
+        }
+
+        p{
+            margin-left: 110px;
+        }
+
+        form input, form button {
+            width: 500px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 8px;
+        }
+
+        input {
+            background-color: #2b2a3c;
+            color: #fff;
+        }
+
+        button {
+            background-color: #6c5ce7;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .forgot-password {
+            margin-left: 330px;
+            margin-bottom: 20px;
+        }
+
+        .forgot-password a {
+            color: #6c5ce7;
+            text-decoration: none;
+        }
+
+        .or-divider {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .social-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .social-buttons button {
+            flex: 1;
+            background: #333;
+        }
+
+        .alert-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+}
+
+.alert {
+    padding: 15px;
+    background-color: #ff4444;
+    color: white;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-section">
+            <img src="{{ url_for('static', filename='images/login.png') }}" alt="Login Image">
+        </div>
+        <div class="right-section">
+            <h2>Login</h2>
+
+            <div class="alert-container">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="alert">
+                            {% for message in messages %}
+                                {{ message }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <form action="/login" method="POST">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Enter your password" required>
+                <div class="forgot-password">
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            
+            <p>Don't have an account? <!-- login.html -->
+                <a href="{{ url_for('signup_form') }}" style="color: #6c5ce7;">Create a new account</a></p>
+        </div>
+    </div>
+</body>
+</html>
