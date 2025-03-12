@@ -22,14 +22,13 @@
 
     /* Sidebar Styles */
     .sidebar {
-      width: 50px; /* Collapsed width */
+      width: 60px; /* Initially collapsed */
       background-color: #1c1b29;
       color: white;
       transition: width 0.3s ease;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-between;
       overflow: hidden;
     }
 
@@ -56,23 +55,45 @@
       list-style: none;
       padding: 0;
       width: 100%;
-      margin-top: -30px;
+      margin-top: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .sidebar-menu li {
       padding: 15px;
       text-align: center;
       border-bottom: 1px solid #34495e;
-      display: none; /* Hidden by default */
-    }
-
-    .sidebar.expanded .sidebar-menu li {
-      display: block; /* Show when expanded */
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .sidebar-menu a {
       color: white;
       text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-menu i {
+      font-size: 18px; /* Icon size */
+    }
+
+    .sidebar.expanded .sidebar-menu li span {
+      display: inline-block; /* Show text when expanded */
+    }
+
+    .sidebar-menu span {
+      display: none; /* Hide text by default */
+    }
+
+    /* Move logout to the bottom */
+    .sidebar-menu .logout {
+      margin-top: auto; /* Push logout item to the bottom */
+      border-top: 1px solid #34495e; /* Optional: Add a line above logout */
     }
 
     /* Main Content Styles */
@@ -109,7 +130,7 @@
       }
 
       .sidebar.expanded {
-        width: 100px; /* Slightly smaller expanded width */
+        width: 100px; /* Slightly smaller expanded width on small screens */
       }
 
       .menu-icon {
@@ -136,16 +157,19 @@
   <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
     <div class="menu-icon" id="menu-icon">&#9776;</div>
-    <div class="sidebar-menu">
-      <a href="#">Prediction</a>
-      <a href="#"><i class="fa-solid fa-database"></i>Dataset</a>
-    </div>
+
+    <ul class="sidebar-menu">
+      <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+      <li><a href="#"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+      <!-- Logout Icon at the bottom -->
+      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
+    </ul>
   </div>
 
   <!-- Main Content -->
   <div class="main-content">
     <div class="header">
-      <h1>Welcome Name</h1>
+      <h1>Welcome {{ session['name'] }}</h1>
     </div>
     <div class="boxes">
       <div class="box">Box 1</div>
