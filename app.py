@@ -7,18 +7,15 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
 
 # Database connection
-import os
-
 def get_db_connection():
     conn = psycopg2.connect(
-        dbname=os.getenv('DB_NAME', 'churn_prediction'),
-        user=os.getenv('DB_USER', 'postgres'),
-        password=os.getenv('DB_PASSWORD', 'your_password'),
-        host=os.getenv('DB_HOST', 'localhost'),
-        port=os.getenv('DB_PORT', '5432')
+        dbname="churn_prediction",
+        user="postgres",
+        password="gowri",
+        host="localhost",
+        port="5432"
     )
     return conn
-
 
 # Routes
 @app.route('/')
