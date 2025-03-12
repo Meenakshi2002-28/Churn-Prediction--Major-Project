@@ -7,15 +7,18 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
 
 # Database connection
+import os
+
 def get_db_connection():
     conn = psycopg2.connect(
-        dbname="churn_prediction",
-        user="postgres",
-        password="gowri",
-        host="localhost",
-        port="5432"
+        dbname=os.getenv('DB_NAME', 'churn_prediction'),
+        user=os.getenv('DB_USER', 'postgres'),
+        password=os.getenv('DB_PASSWORD', 'your_password'),
+        host=os.getenv('DB_HOST', 'localhost'),
+        port=os.getenv('DB_PORT', '5432')
     )
     return conn
+
 
 # Routes
 @app.route('/')
@@ -30,16 +33,17 @@ def signup_form():
         name = request.form['name']
         username = request.form['username']
         email = request.form['email']
+        organization = request.form['organization']  # New organization field
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
         if password != confirm_password:
             flash('Passwords do not match. Please try again.', 'error')
-            # Pass data back to the form to repopulate fields
             return render_template('signup.html', 
                                    name=name,
                                    username=username,
-                                   email=email)
+                                   email=email,
+                                   organization=organization)
 
         # Hash the password
         hashed_password = bcrypt.hashpw(
@@ -56,10 +60,10 @@ def signup_form():
                 flash('Username already exists. Please choose another one.', 'error')
                 return redirect(url_for('signup_form'))
             
-            # Insert new user
+            # Insert new user with organization
             cur.execute(
-                "INSERT INTO login (name, username, email, password) VALUES (%s, %s, %s, %s)",
-                (name, username, email, hashed_password)
+                "INSERT INTO login (name, username, email, organization, password) VALUES (%s, %s, %s, %s, %s)",
+                (name, username, email, organization, hashed_password)
             )
             conn.commit()
             flash('Account created successfully! You can now log in.', 'success')
@@ -68,7 +72,7 @@ def signup_form():
             cur.close()
             conn.close()
 
-    return render_template('signup.html', name='', username='', email='')
+    return render_template('signup.html', name='', username='', email='', organization='')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -86,10 +90,11 @@ def login():
                 password.encode('utf-8'),
                 user['password'].encode('utf-8')
             ):
-                # Store name in the session
+                # Store user data in session
                 session['user_id'] = user['id']
                 session['username'] = user['username']
-                session['name'] = user['name']  # Add this line
+                session['name'] = user['name']
+                session['organization'] = user['organization']  # Add organization to session
                 return redirect(url_for('dashboard'))
             else:
                 flash('Invalid username or password', 'error')
@@ -104,11 +109,16 @@ def login():
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return f"Welcome {session['name']}! This is your dashboard."
+
+    return render_template('dashboard.html', name=session['name'], organization=session['organization'])
+
+@app.route('/prediction')
+def prediction():
+    return render_template('prediction.html')
 
 @app.route('/logout')
 def logout():
-    session.clear()  # Clears all session data, including 'name'
+    session.clear()
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
