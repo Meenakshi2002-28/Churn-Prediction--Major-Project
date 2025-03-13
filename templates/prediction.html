@@ -72,31 +72,31 @@
             <div class="form-group">
                 <label for="location">Location:</label>
                 <select id="location" name="location">
-                    <option value="Alabama">Alabama</option>
-                    <option value="California">California</option>
-                    <option value="Florida">Florida</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Idaho">Idaho</option>
-                    <option value="Maine">Maine</option>
                     <option value="Montana">Montana</option>
-                    <option value="Nebrasksa">Nebrasksa</option>
-                    <option value="New-Jersey">New Jersey</option>
-                    <option value="New York">New York</option>
-                    <option value="North-Carolina">North Carolina</option>
-                    <option value="North-Dakota">North Dakota</option>
-                    <option value="South-Carolina">South Carolina</option>
-                    <option value="Utah">Utah</option>
-                    <option value="Vermont">Vermont</option>
-                    <option value="Virginia">Virginia</option>
+                    <option value="New Jersey">New Jersey</option>
                     <option value="Washington">Washington</option>
-                    <option value="West-Virginia">West Virginia</option>
+                    <option value="California">California</option>
+                    <option value="Georgia">Georgia</option>
                     <option value="Wisconsin">Wisconsin</option>
+                    <option value="Idaho">Idaho</option>
+                    <option value="New York">New York</option>
+                    <option value="Alabama">Alabama</option>
+                    <option value="South Carolina">South Carolina</option>
+                    <option value="North Carolina">North Carolina</option>
+                    <option value="Utah">Utah</option>
+                    <option value="West Virginia">West Virginia</option>
+                    <option value="Maine">Maine</option>
+                    <option value="Nebrasksa">Nebrasksa</option>
+                    <option value="Virginia">Virginia</option>
+                    <option value="Vermont">Vermont</option>
+                    <option value="Florida">Florida</option>
+                    <option value="North Dakota">North Dakota</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="subscription">Subscription Type:</label>
-                <select id="subscription" name="subscription">
+                <label for="subscription_type">Subscription Type:</label>
+                <select id="subscription_type" name="subscription_type">
                     <option value="Free">Free</option>
                     <option value="Family">Family</option>
                     <option value="Premium">Premium</option>
@@ -115,11 +115,21 @@
             <div class="form-group">
                 <label for="payment_method">Payment Method:</label>
                 <select id="payment_method" name="payment_method">
-                    <option value="PayPal">PayPal</option>
-                    <option value="Credit-Card">Credit Card</option>
-                    <option value="Apple-Pay">Apple Pay</option>
-                    <option value="Debit-card">Debit Card</option>
+                    <option value="Paypal">Paypal</option>
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Apple Pay">Apple Pay</option>
+                    <option value="Debit Card">Debit Card</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="num_subscription_pauses">Number of Subscription Pauses:</label>
+                <input type="number" id="num_subscription_pauses" name="num_subscription_pauses" required>
+            </div>
+
+            <div class="form-group">
+                <label for="signup_date">Signup Date:</label>
+                <input type="date" id="signup_date" name="signup_date" required>
             </div>
 
             <div class="form-group">
@@ -128,37 +138,47 @@
             </div>
 
             <div class="form-group">
-                <label for="session_length">Average Session Length (minutes):</label>
-                <input type="number" id="session_length" name="session_length" required>
+                <label for="average_session_length">Average Session Length (minutes):</label>
+                <input type="number" id="average_session_length" name="average_session_length" required>
             </div>
 
             <div class="form-group">
-                <label for="skip_rate">Song Skip Rate (0 to 1):</label>
-                <input type="range" id="skip_rate" name="skip_rate" min="0" max="1" step="0.01">
+                <label for="song_skip_rate">Song Skip Rate:</label>
+                <input type="number" id="song_skip_rate" name="song_skip_rate" step="0.01" required>
             </div>
 
             <div class="form-group">
-                <label for="playlists">Number of Playlists Created:</label>
-                <input type="number" id="playlists" name="playlists" required>
+                <label for="weekly_songs_played">Weekly Songs Played:</label>
+                <input type="number" id="weekly_songs_played" name="weekly_songs_played" required>
             </div>
 
             <div class="form-group">
-                <label for="friends">Number of Platform Friends:</label>
-                <input type="number" id="friends" name="friends" required>
+                <label for="weekly_unique_songs">Weekly Unique Songs:</label>
+                <input type="number" id="weekly_unique_songs" name="weekly_unique_songs" required>
             </div>
 
             <div class="form-group">
-                <label for="notifications">Notifications Clicked:</label>
-                <input type="number" id="notifications" name="notifications" required>
+                <label for="notifications_clicked">Notifications Clicked:</label>
+                <input type="number" id="notifications_clicked" name="notifications_clicked" required>
             </div>
 
             <div class="form-group">
-                <label for="inquiries">Customer Service Inquiries:</label>
-                <select id="inquiries" name="inquiries">
+                <label for="customer_service_inquiries">Customer Service Inquiries:</label>
+                <select id="customer_service_inquiries" name="customer_service_inquiries">
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="engagement_score">Engagement Score:</label>
+                <input type="number" id="engagement_score" name="engagement_score" required>
+            </div>
+
+            <div class="form-group">
+                <label for="skip_rate_per_session">Skip Rate Per Session:</label>
+                <input type="number" id="skip_rate_per_session" name="skip_rate_per_session" step="0.01" required>
             </div>
 
             <button type="submit" class="predict-btn">PREDICT</button>
