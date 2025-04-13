@@ -4,10 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-
-  <title>Responsive Dashboard</title>
+  <title>Dashboard</title>
   <style>
-    /* General Reset */
     * {
       margin: 0;
       padding: 0;
@@ -18,13 +16,13 @@
       font-family: Arial, sans-serif;
       display: flex;
       height: 100vh;
-    }
-
-    /* Sidebar Styles */
-    .sidebar {
-      width: 60px; /* Initially collapsed */
       background-color: #1c1b29;
       color: white;
+    }
+
+    .sidebar {
+      width: 60px;
+      background-color: #1c1b29;
       transition: width 0.3s ease;
       display: flex;
       flex-direction: column;
@@ -33,14 +31,13 @@
     }
 
     .sidebar.expanded {
-      width: 150px; /* Expanded width */
+      width: 150px;
     }
 
     .menu-icon {
       font-size: 24px;
       cursor: pointer;
       margin: 20px 0;
-      text-align: center;
       padding: 10px;
       background-color: #34495e;
       border-radius: 50%;
@@ -79,28 +76,26 @@
     }
 
     .sidebar-menu i {
-      font-size: 18px; /* Icon size */
+      font-size: 18px;
     }
 
     .sidebar.expanded .sidebar-menu li span {
-      display: inline-block; /* Show text when expanded */
+      display: inline-block;
     }
 
     .sidebar-menu span {
-      display: none; /* Hide text by default */
+      display: none;
     }
 
-    /* Move logout to the bottom */
     .sidebar-menu .logout {
-      margin-top: auto; /* Push logout item to the bottom */
-      border-top: 1px solid #34495e; /* Optional: Add a line above logout */
+      margin-top: auto;
+      border-top: 1px solid #34495e;
     }
 
-    /* Main Content Styles */
     .main-content {
       flex-grow: 1;
       padding: 20px;
-      background-color: #ecf0f1;
+      background-color: #9995ab58;
     }
 
     .header h1 {
@@ -108,29 +103,38 @@
       font-size: 24px;
     }
 
-    .boxes {
-      display: flex;
+    .dashboard-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
     }
 
-    .box {
-      background-color: #3498db;
-      color: white;
+    .metric-box {
+      background-color: #1F1D2B;
       padding: 20px;
-      text-align: center;
       border-radius: 8px;
-      flex: 1;
-      font-size: 18px;
+      text-align: center;
+      color: white;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
     }
 
-    /* Responsive Design */
+    .metric-box h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .metric-box p {
+      font-size: 30px;
+      font-weight: bold;
+    }
+
     @media (max-width: 768px) {
       .sidebar {
-        width: 60px; /* Always collapsed on small screens */
+        width: 60px;
       }
 
       .sidebar.expanded {
-        width: 100px; /* Slightly smaller expanded width on small screens */
+        width: 100px;
       }
 
       .menu-icon {
@@ -142,45 +146,41 @@
       .main-content {
         padding: 10px;
       }
-
-      .boxes {
-        flex-direction: column;
-      }
-
-      .box {
-        margin-bottom: 10px;
-      }
     }
   </style>
 </head>
 <body>
-  <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
     <div class="menu-icon" id="menu-icon">&#9776;</div>
 
     <ul class="sidebar-menu">
       <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
       <li><a href="#"><i class="fas fa-database"></i><span> Dataset</span></a></li>
-      <!-- Logout Icon at the bottom -->
       <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
     </ul>
   </div>
 
-  <!-- Main Content -->
   <div class="main-content">
     <div class="header">
       <h1>Welcome {{ session['name'] }}</h1>
     </div>
-    <div class="boxes">
-      <div class="box">Box 1</div>
-      <div class="box">Box 2</div>
-      <div class="box">Box 3</div>
+    <div class="dashboard-metrics">
+      <div class="metric-box">
+        <h2>Total Users</h2>
+        <p>1,25,000</p>
+      </div>
+      <div class="metric-box">
+        <h2>Churned Users</h2>
+        <p>35,000</p>
+      </div>
+      <div class="metric-box">
+        <h2>Retained Users</h2>
+        <p>90,000</p>
+      </div>
     </div>
   </div>
 
-  <!-- Internal JavaScript -->
   <script>
-    // Toggle sidebar expansion
     const sidebar = document.getElementById('sidebar');
     const menuIcon = document.getElementById('menu-icon');
 
@@ -188,7 +188,6 @@
       sidebar.classList.toggle('expanded');
     });
 
-    // Collapse sidebar automatically on smaller screens
     window.addEventListener('resize', () => {
       if (window.innerWidth <= 768) {
         sidebar.classList.remove('expanded');
