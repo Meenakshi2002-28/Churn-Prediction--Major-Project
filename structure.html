@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <title>Prediction</title>
+</head>
+<body>
+    <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+    
+        body {
+          font-family: Arial, sans-serif;
+          display: flex;
+          height: 100vh;
+          background-color: #1c1b29;
+          color: white;
+        }
+    
+        .sidebar {
+          width: 60px;
+          background-color: #1c1b29;
+          transition: width 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          overflow: hidden;
+        }
+    
+        .sidebar.expanded {
+          width: 150px;
+        }
+    
+        .menu-icon {
+          font-size: 24px;
+          cursor: pointer;
+          margin: 20px 0;
+          padding: 10px;
+          background-color: #34495e;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+    
+        .sidebar-menu {
+          list-style: none;
+          padding: 0;
+          width: 100%;
+          margin-top: 10px;
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+        }
+    
+        .sidebar-menu li {
+          padding: 15px;
+          text-align: center;
+          border-bottom: 1px solid #34495e;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+    
+        .sidebar-menu a {
+          color: white;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+    
+        .sidebar-menu i {
+          font-size: 18px;
+        }
+    
+        .sidebar.expanded .sidebar-menu li span {
+          display: inline-block;
+        }
+    
+        .sidebar-menu span {
+          display: none;
+        }
+    
+        .sidebar-menu .logout {
+          margin-top: auto;
+          border-top: 1px solid #34495e;
+        }
+    
+        .main-content {
+          flex-grow: 1;
+          padding: 20px;
+          background-color: #9995ab58;
+        }
+    
+        .header h1 {
+          margin-bottom: 20px;
+          font-size: 24px;
+        }
+    
+        .dashboard-metrics {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 20px;
+        }
+    
+        .metric-box {
+          background-color: #1F1D2B;
+          padding: 20px;
+          border-radius: 8px;
+          text-align: center;
+          color: white;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+    
+        .metric-box h2 {
+          font-size: 20px;
+          margin-bottom: 10px;
+        }
+    
+        .metric-box p {
+          font-size: 30px;
+          font-weight: bold;
+        }
+    
+        @media (max-width: 768px) {
+          .sidebar {
+            width: 60px;
+          }
+    
+          .sidebar.expanded {
+            width: 100px;
+          }
+    
+          .menu-icon {
+            font-size: 20px;
+            width: 35px;
+            height: 35px;
+          }
+    
+          .main-content {
+            padding: 10px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="sidebar" id="sidebar">
+        <div class="menu-icon" id="menu-icon">&#9776;</div>
+    
+        <ul class="sidebar-menu">
+          <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+          <li><a href="#"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+          <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
+        </ul>
+      </div>
+    
+      <div class="main-content">
+        
+      </div>
+    
+      <script>
+        const sidebar = document.getElementById('sidebar');
+        const menuIcon = document.getElementById('menu-icon');
+    
+        menuIcon.addEventListener('click', () => {
+          sidebar.classList.toggle('expanded');
+        });
+    
+        window.addEventListener('resize', () => {
+          if (window.innerWidth <= 768) {
+            sidebar.classList.remove('expanded');
+          }
+        });
+      </script>
+    </body>
+    </html>
