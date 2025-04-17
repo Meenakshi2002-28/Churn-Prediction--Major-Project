@@ -5,6 +5,9 @@ import bcrypt
 import joblib
 import numpy as np
 import pandas as pd
+from flask import make_response
+from flask import Response  
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
@@ -110,7 +113,42 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    return render_template('dashboard.html', name=session['name'], organization=session['organization'])
+    # Render with no-cache headers
+    response = make_response(render_template(
+        'dashboard.html',
+        name=session['name'],
+        organization=session['organization']
+    ))
+    
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+
+    return response
+
+@app.route('/bulk_upload', methods=['GET', 'POST'])
+def bulk_upload():
+    if request.method == 'POST':
+        # Handle CSV upload and prediction here
+        pass
+    return render_template('bulk_upload.html')
+
+REQUIRED_COLUMNS = [
+    'age', 'location', 'subscription_type', 'payment_plan', 'payment_method',
+    'num_subscription_pauses', 'weekly_hours', 'average_session_length',
+    'song_skip_rate', 'weekly_songs_played', 'weekly_unique_songs',
+    'notifications_clicked', 'customer_service_inquiries',
+    'engagement_score', 'skip_rate_per_session', 'signup_date'
+]
+
+@app.route('/download_template')
+def download_template():
+    df = pd.DataFrame(columns=REQUIRED_COLUMNS)
+    return Response(
+        df.to_csv(index=False),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=template.csv"}
+    )
 
 @app.route('/prediction')
 def prediction():
@@ -137,6 +175,7 @@ with open('scaler.pkl', 'rb') as f:
     scaler = joblib.load(f)
 
 from datetime import datetime
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -234,6 +273,14 @@ def predict():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 
 if __name__ == '__main__':
     app.run(debug=True)
