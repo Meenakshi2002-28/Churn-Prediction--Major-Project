@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create an Account</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -43,16 +44,16 @@
 
         .right-section {
             background-color: black;
-            width: 50%;
-            padding: 80px 60px;
-            margin-top: 50px;
+            width: 40%;
+            padding: 60px 50px;
+            margin-top: 0px;
         }
 
         h2 {
             font-size: 2rem;
             margin-bottom: 20px;
             margin-left: 80px;
-            margin-top: -10px;
+            margin-top: 0px;
         }
 
         form input,
@@ -119,8 +120,14 @@
             color: #fff;
         }
 
-        p{
+        p {
             margin-left: 110px;
+        }
+        .password-container i {
+            color: #ccc;
+        }
+        .password-container i:hover {
+            color: #fff;
         }
     </style>
 </head>
@@ -174,35 +181,72 @@
                 <input type="email" name="email" value="{{ email }}" placeholder="Email" required>
 
                 <!--Oraganization Name Field-->
-                <input type="text" name="organization" value="{{ organization }}" placeholder="Organization Name" required>
+                <input type="text" name="organization" value="{{ organization }}" placeholder="Organization Name"
+                    required>
 
                 <!-- Password Fields (never repopulate these for security) -->
-                <input type="password" id="password" name="password" placeholder="Password" required>
+                <div class="password-container" style="position: relative; width: 500px;">
+                    <input type="password" id="password" name="password" placeholder="Password" required
+                        style="padding-right: 40px;">
+                    <i id="toggle-password" class="fas fa-eye"
+                        style="position: absolute; top: 40%; right: 15px; transform: translateY(-50%); cursor: pointer;">
+                    </i>
+                </div>
                 <p id="password-error"
                     style="color: #ff4d4d; font-size: 0.8rem; margin-top: -5px; margin-left: 10px; margin-bottom: 10px;">
                 </p>
 
-                <!-- Password Field with custom validation -->
                 <script>
                     const passwordInput = document.getElementById('password');
                     const passwordError = document.getElementById('password-error');
+                    const togglePassword = document.getElementById('toggle-password');
 
+                    // Password validation
                     passwordInput.addEventListener('input', function () {
-                        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+                        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z@$!%*?&]{8,}$/;
                         if (!passwordPattern.test(passwordInput.value)) {
                             passwordError.textContent = "Password must be at least 8 characters, with 1 uppercase, 1 lowercase, 1 special character.";
                         } else {
                             passwordError.textContent = "";
                         }
                     });
+
+                    // Toggle visibility
+                    togglePassword.addEventListener('click', function () {
+                        const isPassword = passwordInput.type === "password";
+                        passwordInput.type = isPassword ? "text" : "password";
+                        togglePassword.classList.toggle('fa-eye');
+                        togglePassword.classList.toggle('fa-eye-slash');
+                    });
                 </script>
+                <!-- Confirm Password Field with Font Awesome toggle -->
+                <div class="password-container" style="position: relative; width: 500px;">
+                    <input type="password" id="confirm-password" name="confirm_password" placeholder="Confirm Password"
+                        required style="padding-right: 40px;">
+                    <i id="toggle-confirm-password" class="fas fa-eye"
+                        style="position: absolute; top: 40%; right: 15px; transform: translateY(-50%); cursor: pointer;">
+                    </i>
+                </div>
 
-                <input type="password" name="confirm_password" placeholder="Confirm Password" required>
 
+                <script>
+                    const confirmPasswordInput = document.getElementById('confirm-password');
+                    const toggleConfirmPassword = document.getElementById('toggle-confirm-password');
+
+                    // Toggle visibility for Confirm Password
+                    toggleConfirmPassword.addEventListener('click', function () {
+                        const isPassword = confirmPasswordInput.type === "password";
+                        confirmPasswordInput.type = isPassword ? "text" : "password";
+                        toggleConfirmPassword.classList.toggle('fa-eye');
+                        toggleConfirmPassword.classList.toggle('fa-eye-slash');
+                    });
+
+                </script>
                 <button type="submit">Sign Up</button>
             </form>
             <p>Already have an account? <a href="/login" style="color: #6c5ce7;">Log in</a>
         </div>
     </div>
 </body>
+
 </html>
