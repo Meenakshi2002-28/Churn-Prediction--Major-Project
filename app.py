@@ -5,6 +5,9 @@ import bcrypt
 import joblib
 import numpy as np
 import pandas as pd
+from flask_mail import Mail, Message
+from datetime import datetime
+import re
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
@@ -27,29 +30,40 @@ def home():
         return redirect(url_for('dashboard'))
     return redirect(url_for('signup_form'))
 
+import re  # make sure this is at the top
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup_form():
     if request.method == 'POST':
         name = request.form['name']
         username = request.form['username']
         email = request.form['email']
-        organization = request.form['organization']  # New organization field
+        organization = request.form['organization']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
+        # Name validation
+        if not re.match(r'^[A-Za-z]+(?: [A-Za-z]+)*$', name):
+            flash('Only alphabetic letters allowed', 'error')
+            return render_template('signup.html', name=name, username=username, email=email, organization=organization)
+
+        # Email validation (only @gmail.com allowed)
+        if not re.match(r'^[\w\.-]+@gmail\.com$', email):
+            flash('Enter a valid Gmail address (e.g., example@gmail.com).', 'error')
+            return render_template('signup.html', name=name, username=username, email=email, organization=organization)
+
+        # Password validation
+        if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}$', password):
+            flash('Password must be at least 8 characters long and include 1 uppercase letter, 1 lowercase letter, and 1 special character.', 'error')
+            return render_template('signup.html', name=name, username=username, email=email, organization=organization)
+
+        # Confirm password match
         if password != confirm_password:
             flash('Passwords do not match. Please try again.', 'error')
-            return render_template('signup.html', 
-                                   name=name,
-                                   username=username,
-                                   email=email,
-                                   organization=organization)
+            return render_template('signup.html', name=name, username=username, email=email, organization=organization)
 
-        # Hash the password
-        hashed_password = bcrypt.hashpw(
-            password.encode('utf-8'),
-            bcrypt.gensalt()
-        ).decode('utf-8')  # Store as string in DB
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         conn = get_db_connection()
         cur = conn.cursor()
@@ -58,9 +72,15 @@ def signup_form():
             cur.execute("SELECT * FROM login WHERE username = %s", (username,))
             if cur.fetchone():
                 flash('Username already exists. Please choose another one.', 'error')
-                return redirect(url_for('signup_form'))
-            
-            # Insert new user with organization
+                return render_template('signup.html', name=name, username='', email=email, organization=organization)
+
+            # Check for existing email
+            cur.execute("SELECT * FROM login WHERE email = %s", (email,))
+            if cur.fetchone():
+                flash('Email already registered. Please use another one or log in.', 'error')
+                return render_template('signup.html', name=name, username=username, email='', organization=organization)
+
+            # Insert new user
             cur.execute(
                 "INSERT INTO login (name, username, email, organization, password) VALUES (%s, %s, %s, %s, %s)",
                 (name, username, email, organization, hashed_password)
@@ -73,6 +93,7 @@ def signup_form():
             conn.close()
 
     return render_template('signup.html', name='', username='', email='', organization='')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -104,6 +125,121 @@ def login():
             conn.close()
     
     return render_template('login.html')
+
+# Initialize Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True  # Use TLS for secure connection
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = 'gparvathys04@gmail.com'  # Replace with your Gmail address
+app.config['MAIL_PASSWORD'] = 'cvwq ftob aqdl gcem'  # Replace with your Gmail app password
+app.config['MAIL_DEFAULT_SENDER'] = 'your_email@gmail.com'
+
+mail = Mail(app)
+
+# Forgot Password Route
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT * FROM login WHERE email = %s", (email,))
+            user = cur.fetchone()
+            
+            if user:
+                user_name = user[1]  # Assuming the 2nd column is the user's name
+
+                # Generate a password reset link (you can add a secure token here)
+                reset_link = url_for('reset_password', email=email, _external=True)
+
+                # Create the email message
+                msg = Message("Password Reset Request", recipients=[email])
+
+                msg.html = f"""
+                <p style="color: black;">Hi <strong>{user_name}</strong>,</p>
+                <p style="color: black;">
+                    We are sending you this email because you requested a password reset.
+                </p>
+                <p style="color: black;">
+                    Click the button below to create a new password:
+                </p>
+                <p>
+                    <a href="{reset_link}" style="background-color: #0000FF; color: white; padding: 10px 20px;
+                        text-align: center; text-decoration: none; display: inline-block; border-radius: 8px; font-size: 14px; font-weight:550">
+                       Set a New Password
+                    </a>
+                </p>
+                <p style="color: black;">
+                    If you did not request a password reset, you can safely ignore this email. Your password will not be changed.
+                </p>
+                """
+
+                try:
+                    mail.send(msg)
+                    flash('Reset instructions have been sent to your email.', 'success')
+                except Exception as e:
+                    print("Email send failed:", e)
+                    flash('Failed to send email. Please check your mail configuration.', 'error')
+            else:
+                flash('No account found with that email address.', 'error')
+        finally:
+            cur.close()
+            conn.close()
+
+        return redirect(url_for('forgot_password'))
+
+    return render_template('forgot_password.html')
+
+
+
+import re  # Add at the top of your file if not already imported
+
+# Reset Password Route
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'POST':
+        # Get email from hidden form input
+        email = request.form.get('email')
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        # Check if passwords match
+        if password != confirm_password:
+            flash('Passwords do not match. Please try again.', 'error')
+            return render_template('reset_password.html', email=email)
+
+        # Password validation (without digit requirement)
+        password_pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z@$!%*?&]{8,}$'
+        if not re.match(password_pattern, password):
+            flash('Password must be at least 8 characters, with 1 uppercase, 1 lowercase, and 1 special character.', 'error')
+            return render_template('reset_password.html', email=email)
+
+        # Hash the new password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # Update the password in the database
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("UPDATE login SET password = %s WHERE email = %s", (hashed_password, email))
+            conn.commit()
+            flash('Password updated successfully!', 'success')
+            return redirect(url_for('login'))
+        finally:
+            cur.close()
+            conn.close()
+    
+    else:
+        # For GET requests, get email from the URL
+        email = request.args.get('email')
+        if not email:
+            flash("Invalid or missing email in reset link.", "error")
+            return redirect(url_for('forgot_password'))
+        return render_template('reset_password.html', email=email)
+
 
 @app.route('/dashboard')
 def dashboard():
