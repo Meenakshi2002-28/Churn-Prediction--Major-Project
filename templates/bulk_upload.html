@@ -186,11 +186,13 @@
     <div class="sidebar" id="sidebar">
         <div class="menu-icon" id="menu-icon">&#9776;</div>
         <ul class="sidebar-menu">
-            <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
-            <li><a href="#"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+          <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
+          <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+          <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
             <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
         </ul>
-    </div>
+      </div>
+      <div class="main-content">
 <div class="container mt-5">
     <h2 class="mb-4">Upload Customer Dataset for Churn Prediction</h2>
     <form action="{{ url_for('bulk_upload') }}" method="POST" enctype="multipart/form-data">
@@ -204,6 +206,7 @@
     </form>
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
     
+</div>
 </div>
 <script>
     const sidebar = document.getElementById('sidebar');
