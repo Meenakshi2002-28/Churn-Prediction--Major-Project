@@ -8,6 +8,9 @@ import pandas as pd
 from flask_mail import Mail, Message
 from datetime import datetime
 import re
+from flask import make_response
+from flask import Response  
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
@@ -246,7 +249,118 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    return render_template('dashboard.html', name=session['name'], organization=session['organization'])
+    # Render with no-cache headers
+    response = make_response(render_template(
+        'dashboard.html',
+        name=session['name'],
+        organization=session['organization']
+    ))
+    
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+
+    return response
+
+@app.route('/bulk_upload', methods=['GET', 'POST'])
+def bulk_upload():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part in request', 'error')
+            return redirect(request.url)
+
+        file = request.files['file']
+
+        if file.filename == '':
+            flash('No selected file', 'error')
+            return redirect(request.url)
+
+        try:
+            df = pd.read_csv(file)
+
+            REQUIRED_COLUMNS = [
+                'age', 'location', 'subscription_type', 'payment_plan', 'payment_method',
+                'num_subscription_pauses', 'weekly_hours', 'average_session_length',
+                'song_skip_rate', 'weekly_songs_played', 'weekly_unique_songs',
+                'notifications_clicked', 'customer_service_inquiries', 'engagement_score',
+                'skip_rate_per_session'
+            ]
+
+            # ✅ Check if required columns are present
+            missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+            if missing:
+                flash(f"Missing columns in uploaded file: {', '.join(missing)}", 'error')
+                return redirect(request.url)
+
+            # ✅ Convert signup_date to days_since_signup
+            today = datetime.today()
+            df['signup_date'] = pd.to_datetime(df['signup_date'], errors='coerce')
+            df['days_since_signup'] = (today - df['signup_date']).dt.days
+
+            # ✅ Drop original signup_date
+            df.drop(columns=['signup_date'], inplace=True)
+
+            # ✅ One-hot encode categorical features
+            categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
+            df_categorical = df[categorical_features]
+            df_categorical = df_categorical.reindex(columns=onehot_encoder.feature_names_in_, fill_value="Unknown")
+            df_encoded = pd.DataFrame(onehot_encoder.transform(df_categorical).toarray(),
+                                      columns=onehot_encoder.get_feature_names_out())
+            df_encoded = df_encoded.reindex(columns=onehot_encoder.get_feature_names_out(), fill_value=0)
+
+            # ✅ Ordinal encode
+            df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
+
+            # ✅ Drop original categorical
+            df.drop(columns=categorical_features, inplace=True)
+
+            # ✅ Combine encoded
+            df = pd.concat([df, df_encoded], axis=1)
+
+            # ✅ Reindex to match scaler input
+            df = df.reindex(columns=scaler.feature_names_in_, fill_value=0)
+
+            # ✅ Scale numeric data
+            df_scaled = scaler.transform(df)
+            df_scaled = pd.DataFrame(df_scaled, columns=scaler.feature_names_in_)
+
+            # ✅ Rename to match model
+            df_scaled.columns = model.feature_name_
+
+            # ✅ Predict
+            predictions = model.predict(df_scaled)
+            df['Prediction'] = ['Churn' if p == 1 else 'Not Churn' for p in predictions]
+
+            # ✅ Convert final result to CSV
+            response = make_response(df.to_csv(index=False))
+            response.headers['Content-Disposition'] = 'attachment; filename=bulk_predictions.csv'
+            response.mimetype = 'text/csv'
+            return response
+
+        except Exception as e:
+            print("❌ Error in bulk upload:", str(e))
+            flash(f"Error processing file: {str(e)}", 'error')
+            return redirect(request.url)
+
+    return render_template('bulk_upload.html')
+
+
+REQUIRED_COLUMNS = [
+    'age', 'location', 'subscription_type', 'payment_plan', 'payment_method',
+    'num_subscription_pauses', 'weekly_hours', 'average_session_length',
+    'song_skip_rate', 'weekly_songs_played', 'weekly_unique_songs',
+    'notifications_clicked', 'customer_service_inquiries',
+    'engagement_score', 'skip_rate_per_session'
+]
+
+@app.route('/download_template')
+def download_template():
+    df = pd.DataFrame(columns=REQUIRED_COLUMNS)
+    return Response(
+        df.to_csv(index=False),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=template.csv"}
+    )
 
 @app.route('/prediction')
 def prediction():
@@ -273,6 +387,7 @@ with open('scaler.pkl', 'rb') as f:
     scaler = joblib.load(f)
 
 from datetime import datetime
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -370,6 +485,14 @@ def predict():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 
 if __name__ == '__main__':
     app.run(debug=True)
