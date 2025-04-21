@@ -10,7 +10,7 @@ from datetime import datetime
 import re
 from flask import make_response
 from flask import Response  
-
+from flask import Flask, render_template, request, flash, redirect, url_for, session
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
@@ -286,56 +286,56 @@ def bulk_upload():
                 'skip_rate_per_session'
             ]
 
-            # ✅ Check if required columns are present
+            # Check if required columns are present
             missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
             if missing:
                 flash(f"Missing columns in uploaded file: {', '.join(missing)}", 'error')
                 return redirect(request.url)
 
-            # ✅ Convert signup_date to days_since_signup
+            # Convert signup_date to days_since_signup
             today = datetime.today()
             df['signup_date'] = pd.to_datetime(df['signup_date'], errors='coerce')
             df['days_since_signup'] = (today - df['signup_date']).dt.days
 
-            # ✅ Drop original signup_date
+            # Drop original signup_date
             df.drop(columns=['signup_date'], inplace=True)
 
-            # ✅ One-hot encode categorical features
+            # One-hot encode categorical features
             categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
             df_categorical = df[categorical_features]
             df_categorical = df_categorical.reindex(columns=onehot_encoder.feature_names_in_, fill_value="Unknown")
             df_encoded = pd.DataFrame(onehot_encoder.transform(df_categorical).toarray(),
-                                      columns=onehot_encoder.get_feature_names_out())
+                                    columns=onehot_encoder.get_feature_names_out())
             df_encoded = df_encoded.reindex(columns=onehot_encoder.get_feature_names_out(), fill_value=0)
 
-            # ✅ Ordinal encode
+            # Ordinal encode
             df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
 
-            # ✅ Drop original categorical
+            # Drop original categorical
             df.drop(columns=categorical_features, inplace=True)
 
-            # ✅ Combine encoded
+            # Combine encoded
             df = pd.concat([df, df_encoded], axis=1)
 
-            # ✅ Reindex to match scaler input
+            # Reindex to match scaler input
             df = df.reindex(columns=scaler.feature_names_in_, fill_value=0)
 
-            # ✅ Scale numeric data
+            # Scale numeric data
             df_scaled = scaler.transform(df)
             df_scaled = pd.DataFrame(df_scaled, columns=scaler.feature_names_in_)
 
-            # ✅ Rename to match model
+            # Rename to match model
             df_scaled.columns = model.feature_name_
 
-            # ✅ Predict
+            # Predict
             predictions = model.predict(df_scaled)
             df['Prediction'] = ['Churn' if p == 1 else 'Not Churn' for p in predictions]
 
-            # ✅ Convert final result to CSV
-            response = make_response(df.to_csv(index=False))
-            response.headers['Content-Disposition'] = 'attachment; filename=bulk_predictions.csv'
-            response.mimetype = 'text/csv'
-            return response
+            # Store results in session and redirect to results page
+            session['prediction_results'] = df.to_json(orient='records')
+            session['results_columns'] = df.columns.tolist()
+
+            return redirect(url_for('prediction_results'))
 
         except Exception as e:
             print("❌ Error in bulk upload:", str(e))
@@ -345,6 +345,21 @@ def bulk_upload():
     return render_template('bulk_upload.html')
 
 
+
+@app.route('/download_results')
+def download_results():
+    if 'prediction_results' not in session:
+        flash('No results to download', 'error')
+        return redirect(url_for('bulk_upload'))
+    
+    df = pd.read_json(session['prediction_results'], orient='records')
+    
+    response = make_response(df.to_csv(index=False))
+    response.headers['Content-Disposition'] = 'attachment; filename=churn_predictions.csv'
+    response.mimetype = 'text/csv'
+    return response
+
+
 REQUIRED_COLUMNS = [
     'age', 'location', 'subscription_type', 'payment_plan', 'payment_method',
     'num_subscription_pauses', 'weekly_hours', 'average_session_length',
@@ -352,6 +367,34 @@ REQUIRED_COLUMNS = [
     'notifications_clicked', 'customer_service_inquiries',
     'engagement_score', 'skip_rate_per_session'
 ]
+
+@app.route('/prediction_results')
+def prediction_results():
+    if 'prediction_results' not in session:
+        flash('No prediction results found', 'error')
+        return redirect(url_for('bulk_upload'))
+    
+    try:
+        # Get results from session
+        results_json = session.get('prediction_results')
+        columns = session.get('results_columns', [])
+        
+        # Convert back to DataFrame
+        df = pd.read_json(results_json, orient='records')
+        
+        # Convert to HTML
+        results_html = df.to_html(
+            classes='table table-striped table-bordered',
+            index=False
+        )
+        
+        return render_template('prediction_results.html', 
+                            results_table=results_html,
+                            num_results=len(df))
+        
+    except Exception as e:
+        flash('Error displaying results', 'error')
+        return redirect(url_for('bulk_upload'))
 
 @app.route('/download_template')
 def download_template():

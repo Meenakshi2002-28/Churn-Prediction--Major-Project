@@ -1,0 +1,253 @@
+<!-- templates/bulk_upload.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bulk Churn Prediction Upload</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+    <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: Arial, sans-serif;
+          display: flex;
+          height: 100vh;
+          background-color: #1c1b29;
+          color: white;
+        }
+
+        .sidebar {
+          width: 60px;
+          background-color: #1c1b29;
+          transition: width 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          overflow: hidden;
+        }
+
+        .sidebar.expanded {
+          width: 150px;
+        }
+
+        .menu-icon {
+          font-size: 24px;
+          cursor: pointer;
+          margin: 20px 0;
+          padding: 10px;
+          background-color: #34495e;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .sidebar-menu {
+          list-style: none;
+          padding: 0;
+          width: 100%;
+          margin-top: 10px;
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .sidebar-menu li {
+          padding: 15px;
+          text-align: center;
+          border-bottom: 1px solid #34495e;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .sidebar-menu a {
+          color: white;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .sidebar-menu i {
+          font-size: 18px;
+        }
+
+        .sidebar.expanded .sidebar-menu li span {
+          display: inline-block;
+        }
+
+        .sidebar-menu span {
+          display: none;
+        }
+
+        .sidebar-menu .logout {
+          margin-top: auto;
+          border-top: 1px solid #34495e;
+        }
+
+        .main-content {
+          flex-grow: 1;
+          padding: 20px;
+          background-color: #9995ab58;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #1F1D2B;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input,
+        select,
+        button {
+            width: 750px;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .predict-btn {
+            background-color: red;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .predict-btn:hover {
+            background-color: darkred;
+        }
+
+        .result {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .unlikely {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .likely {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+          .sidebar {
+            width: 60px;
+          }
+
+          .sidebar.expanded {
+            width: 100px;
+          }
+
+          .menu-icon {
+            font-size: 20px;
+            width: 35px;
+            height: 35px;
+          }
+
+          .main-content {
+            padding: 10px;
+          }
+        }
+        /* Ensure all table text is black */
+.table, .table th, .table td {
+    color: #000000 !important;
+}
+
+/* Make table headers stand out */
+.table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Add hover effect to table rows */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <div class="menu-icon" id="menu-icon">&#9776;</div>
+        <ul class="sidebar-menu">
+          <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
+          <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+          <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+            <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
+        </ul>
+      </div>
+      <div class="main-content">
+
+<div class="container mt-4">
+    <h2 class="mb-4">Prediction Results</h2>
+    
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>Showing {{ num_results }} predictions</span>
+                <a href="{{ url_for('bulk_upload') }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Upload
+                </a>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                {{ results_table|safe }}
+            </div>
+        </div>
+        
+        <div class="card-footer">
+            <a href="{{ url_for('download_results') }}" class="btn btn-success">
+                <i class="fas fa-download"></i> Download Results
+            </a>
+        </div>
+    </div>
+</div>
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const menuIcon = document.getElementById('menu-icon');
+
+    menuIcon.addEventListener('click', () => {
+      sidebar.classList.toggle('expanded');
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('expanded');
+      }
+    });
+</script>
+</body>
+</html>
