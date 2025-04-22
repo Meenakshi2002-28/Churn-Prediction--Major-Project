@@ -399,10 +399,6 @@ def bulk_upload():
 
     return render_template('bulk_upload.html')
 
-
-
-
-
 @app.route('/download_results')
 def download_results():
     if 'prediction_results' not in session:
