@@ -120,6 +120,57 @@
       border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
+        .profile-wrapper {
+          position: fixed;
+          top: 15px;
+          right: 20px;
+          z-index: 999;
+        }
+
+        .profile-icon{
+          font-size: 30px;
+          color: black;
+          opacity: 0.7; /* Initial opacity */
+          transform: scale(0.8); /* Start smaller */
+          transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth animation */          
+          cursor: pointer;
+          margin-right: 10px;
+        }
+
+        .profile-wrapper:hover .profile-icon {
+          opacity: 1; /* Full opacity */
+          transform: scale(1); /* Grow to normal size */
+        }
+
+        .profile-dropdown {
+          display: none;
+          position: absolute;
+          right: 0;
+          top: 40px;
+          background-color: #0d2b4b;
+          color: white;
+          padding: 10px 15px;
+          border-radius: 10px;
+          min-width: 150px;
+        }
+
+        .profile-dropdown .username {
+          margin: 0;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn {
+          display: block;
+          margin-top: 10px;
+          color: #ffffff;
+          text-decoration: none;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn:hover {
+          text-decoration: underline;
+        }
+
     .main-content {
       flex-grow: 1;
       padding: 20px;
@@ -233,6 +284,17 @@
     </ul>
   </div>
 
+<div class="profile-wrapper">
+  <div class="profile-icon" id="profile-toggle">
+    <i class="fas fa-user"></i>
+  </div>
+
+  <div class="profile-dropdown" id="profile-dropdown">
+    <p class="username">{{ session['name'] }}</p>
+    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+  </div>
+</div>
+
   <div class="main-content">
     <div class="header">
       <h1>Welcome {{ session['name'] }}</h1>
@@ -266,6 +328,18 @@
       if (window.innerWidth <= 768) {
         sidebar.classList.remove('expanded');
       }
+    });
+
+    const profileToggle = document.getElementById('profile-toggle');
+    const dropdown = document.getElementById('profile-dropdown');
+
+    profileToggle.addEventListener('click', () => {
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    window.addEventListener('click', function (e) {
+        if (!profileToggle.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
     });
   </script>
 </body>
