@@ -11,6 +11,7 @@ import re
 from flask import make_response
 from flask import Response  
 from flask import Flask, render_template, request, flash, redirect, url_for, session
+from psycopg2.extras import execute_values
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
@@ -262,6 +263,8 @@ def dashboard():
 
     return response
 
+from psycopg2.extras import execute_values
+
 @app.route('/bulk_upload', methods=['GET', 'POST'])
 def bulk_upload():
     if request.method == 'POST':
@@ -270,12 +273,12 @@ def bulk_upload():
             return redirect(request.url)
 
         file = request.files['file']
-
         if file.filename == '':
             flash('No selected file', 'error')
             return redirect(request.url)
 
         try:
+            # 1) Read CSV
             df = pd.read_csv(file)
 
             REQUIRED_COLUMNS = [
@@ -283,66 +286,120 @@ def bulk_upload():
                 'num_subscription_pauses', 'weekly_hours', 'average_session_length',
                 'song_skip_rate', 'weekly_songs_played', 'weekly_unique_songs',
                 'notifications_clicked', 'customer_service_inquiries', 'engagement_score',
-                'skip_rate_per_session'
+                'skip_rate_per_session', 'signup_date'
             ]
-
-            # Check if required columns are present
-            missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+            missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
             if missing:
-                flash(f"Missing columns in uploaded file: {', '.join(missing)}", 'error')
+                flash(f"Missing columns: {', '.join(missing)}", 'error')
                 return redirect(request.url)
 
-            # Convert signup_date to days_since_signup
-            today = datetime.today()
-            df['signup_date'] = pd.to_datetime(df['signup_date'], errors='coerce')
-            df['days_since_signup'] = (today - df['signup_date']).dt.days
+            # 2) Keep a copy for display + DB insert
+            df_display = df.copy()
 
-            # Drop original signup_date
+            # 3) Parse and reformat signup_date in df_display
+            df_display['signup_date'] = pd.to_datetime(
+                df_display['signup_date'], dayfirst=True, errors='coerce'
+            )
+            if df_display['signup_date'].isnull().any():
+                flash("Some signup_date values could not be parsed.", 'error')
+                return redirect(request.url)
+
+            # Format as YYYY‑MM‑DD string for Postgres
+            df_display['signup_date'] = df_display['signup_date'].dt.strftime('%Y-%m-%d')
+
+            # 4) Calculate days_since_signup in a working df
+            today = datetime.today()
+            df['signup_date'] = pd.to_datetime(df_display['signup_date'])
+            df['days_since_signup'] = (today - df['signup_date']).dt.days
             df.drop(columns=['signup_date'], inplace=True)
 
-            # One-hot encode categorical features
+            # 5) One-hot & ordinal encode, scale, predict
+            # (same as before)
             categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
-            df_categorical = df[categorical_features]
-            df_categorical = df_categorical.reindex(columns=onehot_encoder.feature_names_in_, fill_value="Unknown")
-            df_encoded = pd.DataFrame(onehot_encoder.transform(df_categorical).toarray(),
-                                    columns=onehot_encoder.get_feature_names_out())
-            df_encoded = df_encoded.reindex(columns=onehot_encoder.get_feature_names_out(), fill_value=0)
+            df_cat = df[categorical_features]
+            df_cat = df_cat.reindex(
+                columns=onehot_encoder.feature_names_in_, fill_value="Unknown"
+            )
+            df_enc = pd.DataFrame(
+                onehot_encoder.transform(df_cat).toarray(),
+                columns=onehot_encoder.get_feature_names_out()
+            ).reindex(columns=onehot_encoder.get_feature_names_out(), fill_value=0)
 
-            # Ordinal encode
-            df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
-
-            # Drop original categorical
+            df[['customer_service_inquiries']] = ordinal_encoder.transform(
+                df[['customer_service_inquiries']]
+            )
             df.drop(columns=categorical_features, inplace=True)
-
-            # Combine encoded
-            df = pd.concat([df, df_encoded], axis=1)
-
-            # Reindex to match scaler input
+            df = pd.concat([df, df_enc], axis=1)
             df = df.reindex(columns=scaler.feature_names_in_, fill_value=0)
-
-            # Scale numeric data
             df_scaled = scaler.transform(df)
             df_scaled = pd.DataFrame(df_scaled, columns=scaler.feature_names_in_)
-
-            # Rename to match model
             df_scaled.columns = model.feature_name_
 
-            # Predict
-            predictions = model.predict(df_scaled)
-            df['Prediction'] = ['Churn' if p == 1 else 'Not Churn' for p in predictions]
+            preds = model.predict(df_scaled)
 
-            # Store results in session and redirect to results page
-            session['prediction_results'] = df.to_json(orient='records')
-            session['results_columns'] = df.columns.tolist()
+            # 6) Attach predictions back to df_display
+            df_display['prediction'] = ['Churn' if p==1 else 'Not Churn' for p in preds]
 
+            # 7) Save in session for the results page
+            session['prediction_results'] = df_display.to_json(orient='records')
+            session['results_columns'] = df_display.columns.tolist()
+
+            # 8) Get the file name and set source_type as 'dataset'
+            dataset_name = file.filename
+            source_type = 'dataset'
+            upload_time = datetime.now()  # Upload timestamp
+
+            # 9) Insert the data into the database
+            columns_to_store = [
+                'age', 'location', 'subscription_type', 'payment_plan', 'payment_method',
+                'num_subscription_pauses', 'weekly_hours', 'average_session_length',
+                'song_skip_rate', 'weekly_songs_played', 'weekly_unique_songs',
+                'notifications_clicked', 'customer_service_inquiries', 'engagement_score',
+                'skip_rate_per_session', 'signup_date', 'prediction', 'dataset_name', 'upload_time', 'source_type'
+            ]
+            df_display['dataset_name'] = dataset_name
+            df_display['upload_time'] = upload_time
+            df_display['source_type'] = source_type
+
+            df_to_store = df_display[columns_to_store]
+            records = [tuple(row) for row in df_to_store.to_numpy()]
+
+            insert_query = """
+                INSERT INTO data (
+                  age, location, subscription_type, payment_plan, payment_method,
+                  num_subscription_pauses, weekly_hours, average_session_length,
+                  song_skip_rate, weekly_songs_played, weekly_unique_songs,
+                  notifications_clicked, customer_service_inquiries, engagement_score,
+                  skip_rate_per_session, signup_date, prediction,
+                  dataset_name, upload_time, source_type
+                ) VALUES %s
+            """
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            try:
+                print(f"Attempting to insert {len(records)} records…")
+                execute_values(cur, insert_query, records)
+                conn.commit()
+                print("✅ Insert successful!")
+            except Exception as db_err:
+                print("❌ DB insert error:", db_err)
+                flash("Error saving to database", 'error')
+            finally:
+                cur.close()
+                conn.close()
+
+            # 10) Redirect to results
             return redirect(url_for('prediction_results'))
 
         except Exception as e:
-            print("❌ Error in bulk upload:", str(e))
-            flash(f"Error processing file: {str(e)}", 'error')
+            print("❌ Error in bulk_upload:", e)
+            flash(f"Processing error: {e}", 'error')
             return redirect(request.url)
 
     return render_template('bulk_upload.html')
+
+
 
 
 
@@ -404,6 +461,76 @@ def download_template():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=template.csv"}
     )
+
+@app.route('/past_predictions')
+def past_predictions():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Modify the query to return unique dataset_name and upload_time combinations
+    cur.execute("""
+        SELECT DISTINCT dataset_name, upload_time, source_type 
+        FROM data 
+        ORDER BY upload_time DESC
+    """)  # Using DISTINCT to fetch unique combinations of dataset_name and upload_time
+    past_predictions = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return render_template('past_predictions.html', predictions=past_predictions)
+
+@app.route('/view_results/<dataset_name>')
+def view_results(dataset_name):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Exclude dataset_name, upload_time, source_type from the SELECT
+    cur.execute("""
+        SELECT 
+            age, location, subscription_type, payment_plan, payment_method,
+            num_subscription_pauses, weekly_hours, average_session_length,
+            song_skip_rate, weekly_songs_played, weekly_unique_songs,
+            notifications_clicked, customer_service_inquiries, engagement_score,
+            skip_rate_per_session, signup_date, prediction
+        FROM data
+        WHERE dataset_name = %s
+    """, (dataset_name,))
+    
+    rows = cur.fetchall()
+    colnames = [desc[0] for desc in cur.description]
+
+    cur.close()
+    conn.close()
+
+    return render_template("view_results.html", dataset_name=dataset_name, rows=rows, columns=colnames)
+
+@app.route('/delete_dataset', methods=['POST'])
+def delete_dataset():
+    dataset_name = request.form.get('dataset_name')
+    upload_time = request.form.get('upload_time')
+
+    if not dataset_name or not upload_time:
+        flash('Missing dataset name or upload time', 'error')
+        return redirect(url_for('past_predictions'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            DELETE FROM data 
+            WHERE dataset_name = %s AND upload_time = %s
+        """, (dataset_name, upload_time))
+        conn.commit()
+        flash(f"Dataset '{dataset_name}' uploaded at '{upload_time}' deleted successfully!", 'success')
+    except Exception as e:
+        print("❌ Error deleting dataset:", e)
+        flash("Error deleting dataset", 'error')
+    finally:
+        cur.close()
+        conn.close()
+
+    return redirect(url_for('past_predictions'))
+
 
 @app.route('/prediction')
 def prediction():
