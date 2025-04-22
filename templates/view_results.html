@@ -178,51 +178,46 @@
           .main-content {
             padding: 10px;
           }
+          
         }
     </style>
 </head>
 <body>
-  <div class="sidebar" id="sidebar">
-      <div class="menu-icon" id="menu-icon">&#9776;</div>
-      <ul class="sidebar-menu">
-          <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
-          <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
-          <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
-          <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> Past Predictions</span></a></li> <!-- New Past Predictions button -->
-          <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
-      </ul>
-  </div>
-
-  <div class="main-content">
-      <div class="container mt-5">
-          <h2 class="mb-4">Upload Customer Dataset for Churn Prediction</h2>
-          <form action="{{ url_for('bulk_upload') }}" method="POST" enctype="multipart/form-data">
-              <div class="mb-3">
-                  <label for="data_file" class="form-label">Choose CSV or Excel File:</label>
-                  <a href="{{ url_for('download_template') }}" class="btn btn-outline-info mt-3">Download Sample Template</a>
-
-                  <input type="file" name="file" id="data_file" accept=".csv,.xlsx" class="form-control" required>
-              </div>
-              <button type="submit" class="btn btn-primary">Upload and Predict</button>
-          </form>
-          <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
-      </div>
-  </div>
-
-  <script>
-      const sidebar = document.getElementById('sidebar');
-      const menuIcon = document.getElementById('menu-icon');
-
-      menuIcon.addEventListener('click', () => {
-        sidebar.classList.toggle('expanded');
-      });
-
-      window.addEventListener('resize', () => {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('expanded');
-        }
-      });
-  </script>
+    <div class="sidebar" id="sidebar">
+        <div class="menu-icon" id="menu-icon">&#9776;</div>
+        <ul class="sidebar-menu">
+            <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
+            <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+            <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+            <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> Past Predictions</span></a></li>
+            <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
+        </ul>
+    </div>
+    <div class="container mt-5">
+        <h2>Prediction Results for <strong>{{ dataset_name }}</strong></h2>
+        {% if rows %}
+        <table class="table table-dark table-bordered mt-4">
+            <thead>
+                <tr>
+                    {% for col in columns %}
+                    <th>{{ col.replace("_", " ").title() }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    {% for val in row %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No results found for this dataset.</p>
+        {% endif %}
+        <a href="{{ url_for('past_predictions') }}" class="btn btn-secondary mt-3">Back to Past Predictions</a>
+    </div>
 </body>
-
 </html>

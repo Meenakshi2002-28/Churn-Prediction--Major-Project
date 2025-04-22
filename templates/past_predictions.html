@@ -1,0 +1,404 @@
+<!-- templates/bulk_upload.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bulk Churn Prediction Upload</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+          display: flex;
+          min-height: 100vh;
+          background-color: #f8f9fa;
+          color: #333;
+        }
+
+        .sidebar {
+          width: 60px;
+          background-color: #2c3e50;
+          transition: width 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          overflow: hidden;
+          box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.expanded {
+          width: 200px;
+        }
+
+        .menu-icon {
+          font-size: 24px;
+          cursor: pointer;
+          margin: 20px 0;
+          padding: 10px;
+          background-color: #34495e;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          transition: all 0.3s ease;
+        }
+
+        .menu-icon:hover {
+          background-color: #3d566e;
+          transform: rotate(90deg);
+        }
+
+        .sidebar-menu {
+          list-style: none;
+          padding: 0;
+          width: 100%;
+          margin-top: 10px;
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .sidebar-menu li {
+          padding: 15px;
+          text-align: left;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          transition: background-color 0.3s ease;
+        }
+
+        .sidebar-menu li:hover {
+          background-color: #34495e;
+        }
+
+        .sidebar-menu a {
+          color: white;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          width: 100%;
+        }
+
+        .sidebar-menu i {
+          font-size: 18px;
+          min-width: 24px;
+          text-align: center;
+        }
+
+        .sidebar.expanded .sidebar-menu li span {
+          display: inline-block;
+        }
+
+        .sidebar-menu span {
+          display: none;
+          white-space: nowrap;
+        }
+
+        .sidebar-menu .logout {
+          margin-top: auto;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .main-content {
+          flex-grow: 1;
+          padding: 30px;
+          background-color: #f8f9fa;
+          overflow-y: auto;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 25px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        h2:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(to right, #3498db, #9b59b6);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;  /* Increased padding */
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            min-height: 90vh;  /* Added minimum height */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Table styling */
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .table thead th {
+            background-color: #3498db;
+            color: white;
+            font-weight: 500;
+            padding: 15px;
+            border: none;
+            text-align: left;
+        }
+
+        .table thead th:first-child {
+            border-top-left-radius: 8px;
+        }
+
+        .table thead th:last-child {
+            border-top-right-radius: 8px;
+        }
+
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .table tbody td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Button styling */
+        .btn {
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: none;
+        }
+
+        .btn-info {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+            transform: translateY(-1px);
+        }
+
+        /* Action buttons container */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Status badges */
+        .badge {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        /* Content wrapper for better spacing */
+        .content-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Footer button alignment */
+        .footer-button {
+            margin-top: auto;
+            align-self: flex-start;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+
+            .sidebar.expanded {
+                width: 180px;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+
+            .container {
+                padding: 25px;
+                min-height: 85vh;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        /* Animation for table rows */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .table tbody tr {
+            animation: fadeIn 0.3s ease forwards;
+            opacity: 0;
+        }
+
+        .table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+        .table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+        .table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+        .table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+        .table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="menu-icon" id="menu-icon">&#9776;</div>
+        <ul class="sidebar-menu">
+            <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
+            <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+            <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+            <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> Past Predictions</span></a></li>
+            <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="content-wrapper">
+                <h2>Past Predictions</h2>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Dataset Name</th>
+                                <th>Upload Time</th>
+                                <th>Source Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prediction in predictions %}
+                                <tr>
+                                    <td>{{ prediction[0] }}</td>  <!-- Dataset Name -->
+                                    <td>{{ prediction[1] }}</td>  <!-- Upload Time -->
+                                    <td>{{ prediction[2] }}</td>  <!-- Source Type -->
+                                    <td>
+                                        <div class="action-buttons">
+                                            <!-- View Results Button -->
+                                            <a href="{{ url_for('view_results', dataset_name=prediction[0]) }}" class="btn btn-info">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <form id="delete-form-{{ loop.index }}" action="{{ url_for('delete_dataset') }}" method="POST" style="display:inline;">
+                                                <input type="hidden" name="dataset_name" value="{{ prediction[0] }}">
+                                                <input type="hidden" name="upload_time" value="{{ prediction[1] }}">
+                                                <button type="button" class="btn btn-danger" onclick="confirmDelete('delete-form-{{ loop.index }}')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </form>
+                                            
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary footer-button">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+           function confirmDelete(formId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!',
+            background: '#1e1e2f',
+            color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById(formId).submit();
+            }
+        });
+    }
+        const sidebar = document.getElementById('sidebar');
+        const menuIcon = document.getElementById('menu-icon');
+
+        menuIcon.addEventListener('click', () => {
+            sidebar.classList.toggle('expanded');
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('expanded');
+            }
+        });
+    </script>
+</body>
+</html>
