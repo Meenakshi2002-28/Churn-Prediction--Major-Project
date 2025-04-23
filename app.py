@@ -354,19 +354,79 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    # Render with no-cache headers
-    response = make_response(render_template(
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # Basic metrics
+        cur.execute("SELECT COUNT(*) FROM data")
+        total_users = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'churn'")
+        churned_users = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'not churn'")
+        non_churned_users = cur.fetchone()[0]
+
+        # Temporal trends - monthly averages by churn status
+        cur.execute("""
+            SELECT 
+                DATE_TRUNC('month', signup_date) as month,
+                AVG(weekly_hours) as avg_hours,
+                prediction
+            FROM data
+            GROUP BY month, prediction
+            ORDER BY month
+        """)
+        trend_data = cur.fetchall()
+        
+        # Process trend data
+        months = []
+        churned_hours = []
+        retained_hours = []
+        
+        current_month = None
+        for row in trend_data:
+            if row[0] != current_month:
+                months.append(row[0].strftime('%b %Y'))
+                current_month = row[0]
+            
+            if row[2].lower() == 'churn':
+                churned_hours.append(float(row[1]))
+            else:
+                retained_hours.append(float(row[1]))
+
+        # Root causes - top factors
+        cur.execute("""
+            SELECT 
+                subscription_type,
+                AVG(song_skip_rate) as avg_skip_rate,
+                COUNT(*) filter (WHERE prediction = 'Churn')::float / COUNT(*) as churn_rate
+            FROM data
+            GROUP BY subscription_type
+            ORDER BY churn_rate DESC
+            LIMIT 5
+        """)
+        churn_factors = cur.fetchall()
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return render_template(
         'dashboard.html',
         name=session['name'],
-        organization=session['organization']
-    ))
-    
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-
-    return response
-
+        organization=session['organization'],
+        total_users=total_users,
+        churned_users=churned_users,
+        non_churned_users=non_churned_users,
+        months=json.dumps(months),
+        churned_hours=json.dumps(churned_hours),
+        retained_hours=json.dumps(retained_hours),
+        subscription_types=json.dumps([row[0] for row in churn_factors]),
+        churn_rates=json.dumps([float(row[2]) for row in churn_factors]),
+        skip_rates=json.dumps([float(row[1]) for row in churn_factors])
+    )
 from psycopg2.extras import execute_values
 
 @app.route('/bulk_upload', methods=['GET', 'POST'])
