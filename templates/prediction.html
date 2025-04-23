@@ -34,6 +34,7 @@
             min-height: 100vh;
             color: var(--dark);
             background-color: #f1f5f9;
+            overflow: hidden; /* Prevent body scrolling */
         }
 
         /* Sidebar - Dark Theme */
@@ -239,10 +240,12 @@
         /* Main Content */
         .main-content {
             flex-grow: 1;
-            padding: 30px;
+            padding: 20px;
             background-color: #f1f5f9;
             margin-left: 80px;
             transition: margin-left 0.3s ease;
+            height: 100vh;
+            overflow-y:hidden; /* Allow scrolling only in main content if needed */
         }
 
         .sidebar.expanded ~ .main-content {
@@ -251,54 +254,78 @@
 
         /* Form Container */
         .form-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background-color: var(--card-bg);
-            padding: 30px;
+            padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            height: calc(100vh - 40px); /* Fit within viewport minus padding */
+            display: flex;
+            flex-direction: column;
         }
 
         .form-header {
-            margin-bottom: 30px;
+            margin-bottom: 15px;
             text-align: center;
         }
 
         h1 {
             color: #2c3e50;
             font-weight: 600;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             position: relative;
             padding-bottom: 10px;
+            font-size: 1.5rem;
         }
 
         h1:after {
             content: '';
             position: absolute;
-            left: 330px;
+            left: 50%;
+            transform: translateX(-50%);
             bottom: 0;
             width: 50px;
             height: 3px;
             background: linear-gradient(to right, #3498db, #9b59b6);
         }
 
+        .form-content {
+            flex-grow: 1;
+            overflow-y: hidden;
+            padding: 5px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            height: calc(100% - 60px); /* Adjust based on your needs */
+        }
+
+        .form-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 500;
             color: var(--dark);
+            font-size: 0.9rem;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px 15px;
+            padding: 10px 12px;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
             transition: all 0.3s ease;
             background-color: var(--light);
         }
@@ -309,18 +336,22 @@
             box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
         }
 
+        .form-footer {
+            margin-top: auto;
+            padding-top: 15px;
+        }
+
         .predict-btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background-color: var(--primary);
             color: white;
             border: none;
             border-radius: 8px;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 10px;
         }
 
         .predict-btn:hover {
@@ -331,12 +362,13 @@
 
         /* Result Display */
         .result {
-            padding: 20px;
-            margin-top: 25px;
+            padding: 15px;
+            margin-top: 15px;
             border-radius: 8px;
             font-weight: 600;
             text-align: center;
             display: none;
+            font-size: 0.9rem;
         }
 
         .result-stay {
@@ -362,7 +394,7 @@
             }
 
             .main-content {
-                padding: 20px;
+                padding: 15px;
                 margin-left: 70px;
             }
 
@@ -371,7 +403,23 @@
             }
 
             .form-container {
-                padding: 20px;
+                padding: 15px;
+                height: calc(100vh - 30px);
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+                height: auto;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+                margin-bottom: 10px;
             }
         }
     </style>
@@ -408,117 +456,129 @@
                 <h1>Customer Churn Prediction</h1>
             </div>
             
-            <form id="churnForm" action="{{ url_for('predict') }}" method="POST">
-                <div class="form-group">
-                    <label for="age">Age:</label>
-                    <input type="number" class="form-control" id="age" name="age" required min="1">
-                </div>
+            <div class="form-content">
+                <form id="churnForm" action="{{ url_for('predict') }}" method="POST">
+                    <div class="form-row">
+                        <div class="form-column">
+                            <!-- Left Column (7 form groups) -->
+                            <div class="form-group">
+                                <label for="age">Age:</label>
+                                <input type="number" class="form-control" id="age" name="age" required min="1">
+                            </div>
 
-                <div class="form-group">
-                    <label for="location">Location:</label>
-                    <select class="form-control" id="location" name="location">
-                        <option value="Montana">Montana</option>
-                        <option value="New Jersey">New Jersey</option>
-                        <option value="Washington">Washington</option>
-                        <option value="California">California</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Wisconsin">Wisconsin</option>
-                        <option value="Idaho">Idaho</option>
-                        <option value="New York">New York</option>
-                        <option value="Alabama">Alabama</option>
-                        <option value="South Carolina">South Carolina</option>
-                        <option value="North Carolina">North Carolina</option>
-                        <option value="Utah">Utah</option>
-                        <option value="West Virginia">West Virginia</option>
-                        <option value="Maine">Maine</option>
-                        <option value="Nebrasksa">Nebrasksa</option>
-                        <option value="Virginia">Virginia</option>
-                        <option value="Vermont">Vermont</option>
-                        <option value="Florida">Florida</option>
-                        <option value="North Dakota">North Dakota</option>
-                    </select>
-                </div>
+                            <div class="form-group">
+                                <label for="location">Location:</label>
+                                <select class="form-control" id="location" name="location">
+                                    <option value="Montana">Montana</option>
+                                    <option value="New Jersey">New Jersey</option>
+                                    <option value="Washington">Washington</option>
+                                    <option value="California">California</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Wisconsin">Wisconsin</option>
+                                    <option value="Idaho">Idaho</option>
+                                    <option value="New York">New York</option>
+                                    <option value="Alabama">Alabama</option>
+                                    <option value="South Carolina">South Carolina</option>
+                                    <option value="North Carolina">North Carolina</option>
+                                    <option value="Utah">Utah</option>
+                                    <option value="West Virginia">West Virginia</option>
+                                    <option value="Maine">Maine</option>
+                                    <option value="Nebrasksa">Nebrasksa</option>
+                                    <option value="Virginia">Virginia</option>
+                                    <option value="Vermont">Vermont</option>
+                                    <option value="Florida">Florida</option>
+                                    <option value="North Dakota">North Dakota</option>
+                                </select>
+                            </div>
 
-                <div class="form-group">
-                    <label for="subscription_type">Subscription Type:</label>
-                    <select class="form-control" id="subscription_type" name="subscription_type">
-                        <option value="Free">Free</option>
-                        <option value="Family">Family</option>
-                        <option value="Premium">Premium</option>
-                        <option value="Student">Student</option>
-                    </select>
-                </div>
+                            <div class="form-group">
+                                <label for="subscription_type">Subscription Type:</label>
+                                <select class="form-control" id="subscription_type" name="subscription_type">
+                                    <option value="Free">Free</option>
+                                    <option value="Family">Family</option>
+                                    <option value="Premium">Premium</option>
+                                    <option value="Student">Student</option>
+                                </select>
+                            </div>
 
-                <div class="form-group">
-                    <label for="payment_plan">Payment Plan:</label>
-                    <select class="form-control" id="payment_plan" name="payment_plan">
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
-                    </select>
-                </div>
+                            <div class="form-group">
+                                <label for="payment_plan">Payment Plan:</label>
+                                <select class="form-control" id="payment_plan" name="payment_plan">
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
+                            </div>
 
-                <div class="form-group">
-                    <label for="payment_method">Payment Method:</label>
-                    <select class="form-control" id="payment_method" name="payment_method">
-                        <option value="Paypal">Paypal</option>
-                        <option value="Credit Card">Credit Card</option>
-                        <option value="Apple Pay">Apple Pay</option>
-                        <option value="Debit Card">Debit Card</option>
-                    </select>
-                </div>
+                            <div class="form-group">
+                                <label for="payment_method">Payment Method:</label>
+                                <select class="form-control" id="payment_method" name="payment_method">
+                                    <option value="Paypal">Paypal</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Apple Pay">Apple Pay</option>
+                                    <option value="Debit Card">Debit Card</option>
+                                </select>
+                            </div>
 
-                <div class="form-group">
-                    <label for="num_subscription_pauses">Number of Subscription Pauses:</label>
-                    <input type="number" class="form-control" id="num_subscription_pauses" name="num_subscription_pauses" required min="0">
-                </div>
+                            <div class="form-group">
+                                <label for="num_subscription_pauses">Number of Subscription Pauses:</label>
+                                <input type="number" class="form-control" id="num_subscription_pauses" name="num_subscription_pauses" required min="0">
+                            </div>
 
-                <div class="form-group">
-                    <label for="signup_date">Signup Date:</label>
-                    <input type="date" class="form-control" id="signup_date" name="signup_date" required>
-                </div>
+                            <div class="form-group">
+                                <label for="signup_date">Signup Date:</label>
+                                <input type="date" class="form-control" id="signup_date" name="signup_date" required>
+                            </div>
+                        </div>
 
-                <div class="form-group">
-                    <label for="weekly_hours">Weekly Hours Spent:</label>
-                    <input type="number" class="form-control" id="weekly_hours" name="weekly_hours" required>
-                </div>
+                        <div class="form-column">
+                            <!-- Right Column (7 form groups) -->
+                            <div class="form-group">
+                                <label for="weekly_hours">Weekly Hours Spent:</label>
+                                <input type="number" class="form-control" id="weekly_hours" name="weekly_hours" required>
+                            </div>
 
-                <div class="form-group">
-                    <label for="average_session_length">Average Session Length (minutes):</label>
-                    <input type="number" class="form-control" id="average_session_length" name="average_session_length" required>
-                </div>
+                            <div class="form-group">
+                                <label for="average_session_length">Average Session Length (minutes):</label>
+                                <input type="number" class="form-control" id="average_session_length" name="average_session_length" required>
+                            </div>
 
-                <div class="form-group">
-                    <label for="song_skip_rate">Song Skip Rate:</label>
-                    <input type="number" class="form-control" id="song_skip_rate" name="song_skip_rate" step="0.01" required>
-                </div>
+                            <div class="form-group">
+                                <label for="song_skip_rate">Song Skip Rate:</label>
+                                <input type="number" class="form-control" id="song_skip_rate" name="song_skip_rate" step="0.01" required>
+                            </div>
 
-                <div class="form-group">
-                    <label for="weekly_songs_played">Weekly Songs Played:</label>
-                    <input type="number" class="form-control" id="weekly_songs_played" name="weekly_songs_played" required>
-                </div>
+                            <div class="form-group">
+                                <label for="weekly_songs_played">Weekly Songs Played:</label>
+                                <input type="number" class="form-control" id="weekly_songs_played" name="weekly_songs_played" required>
+                            </div>
 
-                <div class="form-group">
-                    <label for="weekly_unique_songs">Weekly Unique Songs:</label>
-                    <input type="number" class="form-control" id="weekly_unique_songs" name="weekly_unique_songs" required>
-                </div>
+                            <div class="form-group">
+                                <label for="weekly_unique_songs">Weekly Unique Songs:</label>
+                                <input type="number" class="form-control" id="weekly_unique_songs" name="weekly_unique_songs" required>
+                            </div>
 
-                <div class="form-group">
-                    <label for="notifications_clicked">Notifications Clicked:</label>
-                    <input type="number" class="form-control" id="notifications_clicked" name="notifications_clicked" required>
-                </div>
+                            <div class="form-group">
+                                <label for="notifications_clicked">Notifications Clicked:</label>
+                                <input type="number" class="form-control" id="notifications_clicked" name="notifications_clicked" required>
+                            </div>
 
-                <div class="form-group">
-                    <label for="customer_service_inquiries">Customer Service Inquiries:</label>
-                    <select class="form-control" id="customer_service_inquiries" name="customer_service_inquiries">
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
-                    </select>
-                </div>
-                <button type="submit" class="predict-btn">PREDICT</button>
-            </form>
-            
-            <div id="result" class="result" style="display:none;"></div>
+                            <div class="form-group">
+                                <label for="customer_service_inquiries">Customer Service Inquiries:</label>
+                                <select class="form-control" id="customer_service_inquiries" name="customer_service_inquiries">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-footer">
+                        <button type="submit" class="predict-btn">PREDICT</button>
+                        <div id="result" class="result" style="display:none;"></div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
