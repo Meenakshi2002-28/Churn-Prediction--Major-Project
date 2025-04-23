@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <!-- Google Font: Playwrite AU SA -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playwrite+AU+SA:wght@100..400&display=swap" rel="stylesheet">
+
 
   <title>Customer Churn Prediction</title>
   <style>
@@ -18,7 +23,6 @@
     body {
       display: flex;
       height: 100vh;
-      background-color: #5dade2;
       color: black;
       background-color: #f8f9fa
     }
@@ -196,6 +200,7 @@
 
     .header h1 {
       animation: slideInFade 0.8s ease-out;
+      margin-top: 8px;
     }
 
 
@@ -296,7 +301,7 @@
 
   <div class="main-content">
     <div class="header">
-      <h1>Welcome {{ session['name'] }}</h1>
+      <h1 style="font-family: 'Georgia', serif;">Welcome {{ session['name'] }}</h1>
     </div>
     <div class="dashboard-metrics">
       <div class="metric-box delay-1">

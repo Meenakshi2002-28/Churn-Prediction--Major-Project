@@ -1,38 +1,39 @@
-<!-- templates/bulk_upload.html -->
 <!DOCTYPE html>
 <html>
 <head>
     <title>Bulk Churn Prediction Upload</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
         * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
+          font-family: 'Roboto', sans-serif;
         }
 
         body {
-          font-family: Arial, sans-serif;
           display: flex;
-          height: 100vh;
-          background-color: #1c1b29;
-          color: white;
+          min-height: 100vh;
+          background-color: #f8f9fa;
+          color: #333;
         }
 
         .sidebar {
           width: 60px;
-          background-color: #1c1b29;
+          background-color: #2c3e50;
           transition: width 0.3s ease;
           display: flex;
           flex-direction: column;
           align-items: center;
           overflow: hidden;
+          box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
         }
 
         .sidebar.expanded {
-          width: 150px;
+          width: 200px;
         }
 
         .menu-icon {
@@ -47,6 +48,13 @@
           display: flex;
           align-items: center;
           justify-content: center;
+          color: white;
+          transition: all 0.3s ease;
+        }
+
+        .menu-icon:hover {
+          background-color: #3d566e;
+          transform: rotate(90deg);
         }
 
         .sidebar-menu {
@@ -61,11 +69,16 @@
 
         .sidebar-menu li {
           padding: 15px;
-          text-align: center;
-          border-bottom: 1px solid #34495e;
+          text-align: left;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: flex-start;
+          transition: background-color 0.3s ease;
+        }
+
+        .sidebar-menu li:hover {
+          background-color: #34495e;
         }
 
         .sidebar-menu a {
@@ -73,11 +86,14 @@
           text-decoration: none;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 15px;
+          width: 100%;
         }
 
         .sidebar-menu i {
           font-size: 18px;
+          min-width: 24px;
+          text-align: center;
         }
 
         .sidebar.expanded .sidebar-menu li span {
@@ -86,168 +102,251 @@
 
         .sidebar-menu span {
           display: none;
+          white-space: nowrap;
         }
 
         .sidebar-menu .logout {
           margin-top: auto;
-          border-top: 1px solid #34495e;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .main-content {
           flex-grow: 1;
-          padding: 20px;
-          background-color: #9995ab58;
-        }
-
-        h1 {
-            text-align: center;
-            font-weight: bold;
-            color: white;
+          padding: 30px;
+          background-color: #f8f9fa;
+          overflow-y: auto;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: #1F1D2B;
-            padding: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 25px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        h2:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(to right, #3498db, #9b59b6);
+        }
+
+        /* Card styling */
+        .card {
+            border: none;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
         }
 
-        label {
-            font-weight: bold;
+        .card-header {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            padding: 15px 20px;
+            border-bottom: none;
         }
 
-        .form-group {
-            margin-bottom: 15px;
+        /* Table styling */
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        input,
-        select,
-        button {
-            width: 750px;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        .table {
+            margin-bottom: 0;
+            color: #212529;
         }
 
-        .predict-btn {
-            background-color: red;
+        .table thead th {
+            background-color: #3498db;
             color: white;
-            font-weight: bold;
-            cursor: pointer;
+            font-weight: 500;
+            border: none;
+            padding: 12px 15px;
         }
 
-        .predict-btn:hover {
-            background-color: darkred;
+        .table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
         }
 
-        .result {
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 5px;
-            font-weight: bold;
+        .table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
         }
 
-        .unlikely {
-            background-color: #d4edda;
-            color: #155724;
+        .table td, .table th {
+            padding: 12px 15px;
+            vertical-align: middle;
+            border-top: 1px solid #e9ecef;
         }
 
-        .likely {
-            background-color: #f8d7da;
-            color: #721c24;
+        /* Button styling */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
+        .btn-light {
+            background-color: white;
+            color: #3498db;
+            border: 1px solid #3498db;
+        }
+
+        .btn-light:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background-color: #2ecc71;
+            border: none;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+            transform: translateY(-1px);
+        }
+
+        /* Status badges */
+        .badge {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-          .sidebar {
-            width: 60px;
-          }
+            .sidebar {
+                width: 60px;
+            }
 
-          .sidebar.expanded {
-            width: 100px;
-          }
+            .sidebar.expanded {
+                width: 180px;
+            }
 
-          .menu-icon {
-            font-size: 20px;
-            width: 35px;
-            height: 35px;
-          }
+            .main-content {
+                padding: 15px;
+            }
 
-          .main-content {
-            padding: 10px;
-          }
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .table-responsive {
+                max-height: 60vh;
+            }
         }
-        /* Ensure all table text is black */
-.table, .table th, .table td {
-    color: #000000 !important;
+
+        /* Animation for table rows */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .table tbody tr {
+            animation: fadeIn 0.3s ease forwards;
+            opacity: 0;
+        }
+
+        .table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+        .table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+        .table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+        .table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+        .table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+
+        .custom-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-/* Make table headers stand out */
-.table thead th {
-    background-color: #f8f9fa;
-    font-weight: 600;
+.custom-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(200, 200, 200, 0.4);
+    border-radius: 10px;
 }
 
-/* Add hover effect to table rows */
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+.custom-scroll::-webkit-scrollbar-track {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
 }
+
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(200, 200, 200, 0.4) rgba(255, 255, 255, 0.1); /* For Firefox */
+}
+
     </style>
 </head>
 <body>
-
     <div class="sidebar" id="sidebar">
         <div class="menu-icon" id="menu-icon">&#9776;</div>
         <ul class="sidebar-menu">
-          <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
-          <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
-          <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+            <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
+            <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+            <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
             <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
         </ul>
-      </div>
-      <div class="main-content">
+    </div>
 
-<div class="container mt-4">
-    <h2 class="mb-4">Prediction Results</h2>
-    
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <span>Showing {{ num_results }} predictions</span>
-                <a href="{{ url_for('bulk_upload') }}" class="btn btn-light btn-sm">
-                    <i class="fas fa-arrow-left"></i> Back to Upload
-                </a>
+    <div class="main-content">
+        <div class="container mt-4">
+            <h2>Prediction Results</h2>
+            
+            <div class="card shadow-sm">
+                <div class="card-header text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Showing {{ num_results }} predictions</span>
+                        <a href="{{ url_for('bulk_upload') }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Upload
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                  <div class="table-responsive custom-scroll" style="max-height: 70vh; overflow-y: auto; overflow-x: auto;">
+                    {{ results_table|safe }}
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white border-top">
+                    <a href="{{ url_for('download_results') }}" class="btn btn-success">
+                        <i class="fas fa-download"></i> Download Results
+                    </a>
+                    <!-- Add this button where appropriate in your existing HTML -->
+<button onclick="window.location.href='/analysis_dashboard'">Analysis</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="card-body">
-            <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
-                {{ results_table|safe }}
-            </div>
-        </div>
-        
-        <div class="card-footer">
-            <a href="{{ url_for('download_results') }}" class="btn btn-success">
-                <i class="fas fa-download"></i> Download Results
-            </a>
         </div>
     </div>
-</div>
-<script>
-    const sidebar = document.getElementById('sidebar');
-    const menuIcon = document.getElementById('menu-icon');
 
-    menuIcon.addEventListener('click', () => {
-      sidebar.classList.toggle('expanded');
-    });
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const menuIcon = document.getElementById('menu-icon');
 
-    window.addEventListener('resize', () => {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.remove('expanded');
-      }
-    });
-</script>
+        menuIcon.addEventListener('click', () => {
+            sidebar.classList.toggle('expanded');
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('expanded');
+            }
+        });
+    </script>
 </body>
 </html>

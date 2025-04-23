@@ -12,6 +12,15 @@ from flask import make_response
 from flask import Response  
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from psycopg2.extras import execute_values
+import matplotlib.pyplot as plt
+import seaborn as sns
+from io import BytesIO
+import base64
+from flask import render_template
+from io import StringIO
+import json
+from datetime import datetime
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Keep this consistent
@@ -200,7 +209,102 @@ def forgot_password():
 
 
 import re  # Add at the top of your file if not already imported
+from datetime import datetime
+from io import StringIO
+import json
+import pandas as pd
+import numpy as np
 
+@app.route('/analysis_dashboard')
+def analysis_dashboard():
+    print("\n===== DEBUG: Entered analysis_dashboard route =====")
+    print(f"Session keys: {list(session.keys())}")
+    
+    if 'prediction_results' not in session:
+        print("DEBUG: No prediction_results in session - redirecting")
+        flash('No prediction results found', 'error')
+        return redirect(url_for('bulk_upload'))
+    
+    try:
+        print("DEBUG: Generating dashboard...")
+        results_json = session.get('prediction_results')
+        
+        # Safely parse JSON data
+        try:
+            df = pd.read_json(StringIO(results_json), orient='records')
+        except Exception as e:
+            print(f"DEBUG: JSON parsing error: {str(e)}")
+            raise ValueError("Invalid prediction results data") from e
+            
+        print(f"DEBUG: DataFrame shape: {df.shape}")
+        print(f"DEBUG: Columns: {df.columns.tolist()}")
+        
+        # Calculate metrics with proper error handling
+        total_customers = len(df)
+        try:
+            churn_counts = df['prediction'].value_counts()
+            churn_rate = round((churn_counts.get('Churn', 0) / total_customers) * 100, 1) if total_customers > 0 else 0.0
+            churn_rate = float(churn_rate)  # Ensure it's native float
+        except KeyError:
+            print("DEBUG: 'prediction' column not found in DataFrame")
+            churn_counts = pd.Series()
+            churn_rate = 0.0
+        
+        # Prepare all data structures with serializable values
+        analysis_data = {
+            'metrics': {
+                'total_customers': int(total_customers),
+                'churn_rate': churn_rate,
+                'avg_engagement': float(round(df['engagement_score'].mean(), 2)) if 'engagement_score' in df.columns else 0.0,
+                'avg_weekly_hours': float(round(df['weekly_hours'].mean(), 1)) if 'weekly_hours' in df.columns else 0.0
+            },
+            'churn_data': {
+                'labels': ['Not Churn', 'Churn'],
+                'counts': [
+                    int(churn_counts.get('Not Churn', 0)),
+                    int(churn_counts.get('Churn', 0))
+                ]
+            },
+            'age_data': {
+                'not_churn': [int(x) for x in df[df['prediction'] == 'Not Churn']['age'].tolist()] if 'age' in df.columns else [],
+                'churn': [int(x) for x in df[df['prediction'] == 'Churn']['age'].tolist()] if 'age' in df.columns else []
+            },
+            'engagement_data': {
+                'not_churn': [float(x) for x in df[df['prediction'] == 'Not Churn']['engagement_score'].tolist()] if 'engagement_score' in df.columns else [],
+                'churn': [float(x) for x in df[df['prediction'] == 'Churn']['engagement_score'].tolist()] if 'engagement_score' in df.columns else []
+            },
+            'subscription_data': {
+                'types': [str(x) for x in df['subscription_type'].unique().tolist()] if 'subscription_type' in df.columns else [],
+                'not_churn': [
+                    int(len(df[(df['prediction'] == 'Not Churn') & (df['subscription_type'] == t)]))
+                    for t in df['subscription_type'].unique()
+                ] if 'subscription_type' in df.columns else [],
+                'churn': [
+                    int(len(df[(df['prediction'] == 'Churn') & (df['subscription_type'] == t)]))
+                    for t in df['subscription_type'].unique()
+                ] if 'subscription_type' in df.columns else []
+            },
+            'scatter_data': {
+                'not_churn': [
+                    {'x': float(row['weekly_hours']), 'y': float(row['song_skip_rate'])}
+                    for _, row in df[df['prediction'] == 'Not Churn'].iterrows()
+                ] if all(col in df.columns for col in ['weekly_hours', 'song_skip_rate']) else [],
+                'churn': [
+                    {'x': float(row['weekly_hours']), 'y': float(row['song_skip_rate'])}
+                    for _, row in df[df['prediction'] == 'Churn'].iterrows()
+                ] if all(col in df.columns for col in ['weekly_hours', 'song_skip_rate']) else []
+            },
+            'now': datetime.now()  # Keep as datetime object for template formatting
+        }
+
+        print("DEBUG: Data preparation complete. Rendering template...")
+        print(f"DEBUG: Analysis data keys: {analysis_data.keys()}")
+        return render_template('analysis_dashboard.html', **analysis_data)
+        
+    except Exception as e:
+        print(f"DEBUG: Error in dashboard generation: {str(e)}", flush=True)
+        flash(f'Error generating dashboard: {str(e)}', 'error')
+        return redirect(url_for('prediction_results'))
 # Reset Password Route
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
