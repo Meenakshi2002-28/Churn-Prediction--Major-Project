@@ -662,8 +662,7 @@ from datetime import datetime
 @app.route('/predict', methods=['POST'])
 def predict():
     if request.method == 'POST':
-        # Extract input data
-        input_data = {
+        raw_data = {
             'age': request.form['age'],
             'location': request.form['location'],
             'subscription_type': request.form['subscription_type'],
@@ -677,9 +676,33 @@ def predict():
             'weekly_unique_songs': request.form['weekly_unique_songs'],
             'notifications_clicked': request.form['notifications_clicked'],
             'customer_service_inquiries': request.form['customer_service_inquiries'],
-            'engagement_score': request.form['engagement_score'],
-            'skip_rate_per_session': request.form['skip_rate_per_session'],
-            'signup_date': request.form['signup_date']  # Get signup date
+            'signup_date': request.form['signup_date']
+        }
+        weekly_hours = float(raw_data['weekly_hours'])
+        weekly_songs = float(raw_data['weekly_songs_played'])
+        avg_session = float(raw_data['average_session_length'])
+        skip_rate = float(raw_data['song_skip_rate'])
+
+        # --- CALCULATE METRICS (MUST MATCH ML MODEL) ---
+        engagement_score = weekly_hours * weekly_songs * avg_session
+        skip_rate_per_session = skip_rate / avg_session if avg_session > 0 else 0  # Avoid division by zero
+
+        # --- DEBUG: PRINT VALUES ---
+        print(f"""
+        [DEBUG] Inputs:
+        - Weekly Hours: {weekly_hours}
+        - Weekly Songs Played: {weekly_songs}
+        - Avg Session Length: {avg_session}
+        - Skip Rate: {skip_rate}
+
+        [DEBUG] Calculations:
+        - Engagement Score: {engagement_score} (Expected: {weekly_hours * weekly_songs * avg_session})
+        - Skip Rate Per Session: {skip_rate_per_session} (Expected: {skip_rate / avg_session if avg_session > 0 else 'N/A'})
+        """)
+        input_data = {
+            **raw_data,
+            'engagement_score': engagement_score,
+            'skip_rate_per_session': skip_rate_per_session
         }
 
         # Convert signup date to days_since_signup
@@ -699,7 +722,7 @@ def predict():
         # Check if categorical columns exist in DataFrame
         missing_cols = [col for col in categorical_features if col not in df.columns]
         if missing_cols:
-            print("❌ Missing Categorical Columns:", missing_cols)
+            print(" Missing Categorical Columns:", missing_cols)
             return "Error: Missing required input fields", 400  # Return error message
 
         # One-hot encode categorical features (only if columns exist)
@@ -718,7 +741,7 @@ def predict():
         if 'customer_service_inquiries' in df.columns:
             df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
         else:
-            print("❌ 'customer_service_inquiries' is missing!")
+            print(" 'customer_service_inquiries' is missing!")
 
         # Drop original categorical columns
         df.drop(columns=categorical_features, errors='ignore', inplace=True)
@@ -734,7 +757,7 @@ def predict():
         df_scaled = pd.DataFrame(df_scaled, columns=scaler.feature_names_in_)
 
         # Debugging: Check final feature names before renaming
-        print("✅ Final Features Sent to Model:", df_scaled.columns.tolist())
+        print(" Final Features Sent to Model:", df_scaled.columns.tolist())
         print("Processed DataFrame columns:", df_scaled.columns.tolist())
         print("Expected Model Columns:", model.feature_name_)
 
