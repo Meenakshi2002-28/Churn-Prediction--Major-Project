@@ -1,223 +1,465 @@
-<!-- templates/bulk_upload.html -->
 <!DOCTYPE html>
 <html>
 <head>
     <title>Bulk Churn Prediction Upload</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #8b5cf6;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --card-bg: #ffffff;
+            --sidebar-bg: #1e293b;
+            --sidebar-active: #334155;
+            --sidebar-hover: #2d3748;
+        }
         * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
         }
-
         body {
-          font-family: Arial, sans-serif;
-          display: flex;
-          height: 100vh;
-          background-color: #1c1b29;
-          color: white;
+            display: flex;
+            min-height: 100vh;
+            color: var(--dark);
+            background-color: #f1f5f9;
         }
-
+        /* Sidebar - Dark Theme */
         .sidebar {
-          width: 60px;
-          background-color: #1c1b29;
-          transition: width 0.3s ease;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          overflow: hidden;
+            width: 80px;
+            background-color: var(--sidebar-bg);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            z-index: 100;
         }
-
         .sidebar.expanded {
-          width: 150px;
+            width: 240px;
         }
-
         .menu-icon {
-          font-size: 24px;
-          cursor: pointer;
-          margin: 20px 0;
-          padding: 10px;
-          background-color: #34495e;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .sidebar-menu {
-          list-style: none;
-          padding: 0;
-          width: 100%;
-          margin-top: 10px;
-          flex-grow: 1;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .sidebar-menu li {
-          padding: 15px;
-          text-align: center;
-          border-bottom: 1px solid #34495e;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .sidebar-menu a {
-          color: white;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .sidebar-menu i {
-          font-size: 18px;
-        }
-
-        .sidebar.expanded .sidebar-menu li span {
-          display: inline-block;
-        }
-
-        .sidebar-menu span {
-          display: none;
-        }
-
-        .sidebar-menu .logout {
-          margin-top: auto;
-          border-top: 1px solid #34495e;
-        }
-
-        .main-content {
-          flex-grow: 1;
-          padding: 20px;
-          background-color: #9995ab58;
-        }
-
-        h1 {
-            text-align: center;
-            font-weight: bold;
-            color: white;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #1F1D2B;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        input,
-        select,
-        button {
-            width: 750px;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        .predict-btn {
-            background-color: red;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .predict-btn:hover {
-            background-color: darkred;
-        }
-
-        .result {
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-
-        .unlikely {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .likely {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        @media (max-width: 768px) {
-          .sidebar {
-            width: 60px;
-          }
-
-          .sidebar.expanded {
-            width: 100px;
-          }
-
-          .menu-icon {
             font-size: 20px;
-            width: 35px;
-            height: 35px;
-          }
-
-          .main-content {
+            cursor: pointer;
+            margin: 25px 0;
             padding: 10px;
-          }
-          
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .menu-icon:hover {
+            background-color: var(--primary);
+            transform: rotate(90deg);
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+            margin-top: 10px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-menu li {
+            padding: 14px 20px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            transition: all 0.3s ease;
+            margin: 4px 10px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .sidebar-menu li:not(.active):hover {
+            background-color: var(--sidebar-hover);
+        }
+        .sidebar-menu li.active {
+            background-color: var(--sidebar-active);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .sidebar-menu li.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--primary);
+            border-radius: 4px 0 0 4px;
+        }
+        .sidebar-menu li.active a {
+            color: white;
+        }
+        .sidebar-menu li.active i {
+            color: var(--primary-light);
+        }
+        .sidebar-menu a {
+            color: var(--gray);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        .sidebar-menu i {
+            font-size: 18px;
+            min-width: 24px;
+            text-align: center;
+            transition: all 0.2s ease;
+            color: var(--gray);
+        }
+        .sidebar-menu li:hover i {
+            color: white;
+        }
+        .sidebar.expanded .sidebar-menu li span {
+            display: inline-block;
+            font-weight: 500;
+        }
+        .sidebar-menu span {
+            display: none;
+            white-space: nowrap;
+        }
+        .sidebar-menu .logout {
+            margin-top: auto;
+            margin-bottom: 20px;
+        }
+        .sidebar-menu .logout:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        .sidebar-menu .logout:hover i {
+            color: var(--danger);
+        }
+        /* Profile Dropdown */
+        .profile-wrapper {
+            position: fixed;
+            top: 25px;
+            right: 30px;
+            z-index: 999;
+        }
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+        }
+        .profile-icon:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+        .profile-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 55px;
+            background-color: var(--card-bg);
+            color: var(--dark);
+            padding: 15px;
+            border-radius: 12px;
+            min-width: 200px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+        .profile-dropdown .username {
+            margin: 0;
+            font-weight: 600;
+            color: var(--dark);
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .profile-dropdown .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            color: var(--danger);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        .profile-dropdown .logout-btn:hover {
+            color: #dc2626;
+        }
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            background-color: #f1f5f9;
+            transition: margin-left 0.3s ease;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: var(--dark);
+            font-weight: 600;
+            margin-bottom: 20px; /* Reduced from 25px */
+            position: relative;
+            padding-bottom: 10px;
+        }
+        h2:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(to right, #3498db, #9b59b6);
+        }
+        /* Card styling */
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            padding: 10px 15px; /* Reduced padding */
+            border-bottom: none;
+        }
+        /* Table styling */
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 50vh; /* Increased from 50vh */
+        }
+        .table {
+            margin-bottom: 0;
+            color: #212529;
+        }
+
+        .table thead th {
+            background-color: #3498db;
+            color: white;
+            font-weight: 500;
+            border: none;
+            padding: 0px 15px;
+        }
+        .table thead th {
+    padding: 10px 15px;
+    text-align: left; /* ensures left alignment */
+    white-space: nowrap; /* prevents wrapping */
+}
+
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .table td, .table th {
+            padding: 10px 15px;
+            vertical-align: middle;
+            border-top: 1px solid #e9ecef;
+        }
+
+        /* Button styling */
+        .btn {
+            padding: 6px 12px; /* Reduced padding */
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-light {
+            background-color: white;
+            color: #3498db;
+            border: 1px solid #3498db;
+        }
+        .btn-light:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background-color: #2ecc71;
+            border: none;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+            transform: translateY(-1px);
+        }
+        /* Footer styling */
+        .card-footer {
+            padding: 10px 15px; /* Reduced padding */
+            display: flex;
+            justify-content: flex-end;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            .sidebar.expanded {
+                width: 180px;
+            }
+            .main-content {
+                padding: 15px;
+            }
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .table-responsive {
+                max-height: 60vh; /* Increased from 50vh */
+            }
+        }
+        /* Animation for table rows */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .table tbody tr {
+            animation: fadeIn 0.3s ease forwards;
+            opacity: 0;
+        }
+        .table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+        .table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+        .table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+        .table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+        .table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(200, 200, 200, 0.4);
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .custom-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(200, 200, 200, 0.4) rgba(255, 255, 255, 0.1); /* For Firefox */
         }
     </style>
 </head>
 <body>
     <div class="sidebar" id="sidebar">
-        <div class="menu-icon" id="menu-icon">&#9776;</div>
+        <div class="menu-icon" id="menu-icon">
+            <i class="fas fa-bars"></i>
+        </div>
         <ul class="sidebar-menu">
-            <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
-            <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
-            <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
-            <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> Past Predictions</span></a></li>
+            <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Dashboard</span></a></li>
+            <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Predictions</span></a></li>
+            <li class="active"><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Datasets</span></a></li>
+            <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> History</span></a></li>
             <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
         </ul>
     </div>
-    <div class="container mt-5">
-        <h2>Prediction Results for <strong>{{ dataset_name }}</strong></h2>
-        {% if rows %}
-        <table class="table table-dark table-bordered mt-4">
-            <thead>
-                <tr>
-                    {% for col in columns %}
-                    <th>{{ col.replace("_", " ").title() }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in rows %}
-                <tr>
-                    {% for val in row %}
-                    <td>{{ val }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No results found for this dataset.</p>
-        {% endif %}
-        <a href="{{ url_for('past_predictions') }}" class="btn btn-secondary mt-3">Back to Past Predictions</a>
+    <div class="profile-wrapper">
+        <div class="profile-icon" id="profile-toggle">
+            {{ session['name'][0]|upper }}
+        </div>
+        <div class="profile-dropdown" id="profile-dropdown">
+            <p class="username">{{ session['name'] }}</p>
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
     </div>
+    <div class="main-content">
+        <div class="container mt-5">
+            <h2>Prediction Results for <strong>{{ dataset_name }}</strong></h2>
+            <div class="card shadow-sm">
+                <div class="card-header text-white d-flex justify-content-between align-items-center">
+                    <span>Showing {{ num_results }} predictions</span>
+                    <a href="{{ url_for('bulk_upload') }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Upload
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive custom-scroll" style="max-height: 60vh; overflow-y: auto; overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    {% for col in columns %}
+                                    <th>{{ col.replace("_", " ").title() }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in rows %}
+                                <tr>
+                                    {% for val in row %}
+                                    <td>{{ val }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top">
+                    <a href="{{ url_for('download_results') }}" class="btn btn-success">
+                        <i class="fas fa-download"></i> Download Results
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Sidebar toggle
+        const sidebar = document.getElementById('sidebar');
+        const menuIcon = document.getElementById('menu-icon');
+        menuIcon.addEventListener('click', () => {
+            sidebar.classList.toggle('expanded');
+        });
+        // Profile dropdown toggle
+        const profileToggle = document.getElementById('profile-toggle');
+        const dropdown = document.getElementById('profile-dropdown');
+        profileToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function() {
+            dropdown.style.display = 'none';
+        });
+        // Prevent dropdown from closing when clicking inside it
+        dropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        // Responsive adjustments
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('expanded');
+            }
+        });
+    </script>
 </body>
 </html>
