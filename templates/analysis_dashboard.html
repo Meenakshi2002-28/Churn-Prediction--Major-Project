@@ -170,6 +170,50 @@ body {
   color: var(--danger);
 }
 
+.profile-wrapper {
+          position: fixed;
+          top: 15px;
+          right: 20px;
+          z-index: 999;
+        }
+
+        .profile-icon{
+          font-size: 24px;
+          color: black;
+          cursor: pointer;
+          margin-right: 10px;
+        }
+
+        .profile-dropdown {
+          display: none;
+          position: absolute;
+          right: 0;
+          top: 40px;
+          background-color: #2c2b3c;
+          color: white;
+          padding: 10px 15px;
+          border-radius: 10px;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+          min-width: 150px;
+        }
+
+        .profile-dropdown .username {
+          margin: 0;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn {
+          display: block;
+          margin-top: 10px;
+          color: #ffffff;
+          text-decoration: none;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn:hover {
+          text-decoration: underline;
+        }
+
 /* Dashboard Cards */
 .dashboard-card {
   background: var(--card-bg);
@@ -209,6 +253,16 @@ body {
           <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> History</span></a></li>
           <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
         </ul>
+    </div>
+    <div class="profile-wrapper">
+        <div class="profile-icon" id="profile-toggle">
+          <i class="fas fa-user"></i>
+        </div>
+      
+        <div class="profile-dropdown" id="profile-dropdown">
+          <p class="username">{{ session['name'] }}</p>
+          <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
     </div>
 
     <div class="max-w-7xl mx-auto">
@@ -276,6 +330,18 @@ body {
         </div>
     </div>
     <script>
+        const profileToggle = document.getElementById('profile-toggle');
+        const dropdown = document.getElementById('profile-dropdown');
+
+        profileToggle.addEventListener('click', () => {
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        window.addEventListener('click', function (e) {
+            if (!profileToggle.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
         // Sidebar toggle
     const sidebar = document.getElementById('sidebar');
     const menuIcon = document.getElementById('menu-icon');
@@ -408,12 +474,12 @@ body {
                         {
                             label: 'Not Churn',
                             data: debugChartData('Sub Not Churn', JSON.parse('{{ subscription_data.not_churn | tojson | safe }}')),
-                            backgroundColor: '#4CAF50'
+                            backgroundColor: '#0A2F5C'
                         },
                         {
                             label: 'Churn',
                             data: debugChartData('Sub Churn', JSON.parse('{{ subscription_data.churn | tojson | safe }}')),
-                            backgroundColor: '#F44336'
+                            backgroundColor: '#7FB3FF'
                         }
                     ]
                 },
