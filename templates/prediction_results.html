@@ -1,352 +1,527 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Bulk Churn Prediction Upload</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <title>Bulk Churn Prediction Upload</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          font-family: 'Roboto', sans-serif;
-        }
+  <style>
+    :root {
+      --primary: #7c3aed;
+      --primary-light: #8b5cf6;
+      --secondary: #10b981;
+      --danger: #ef4444;
+      --dark: #0f172a;
+      --light: #f8fafc;
+      --gray: #94a3b8;
+      --card-bg: #ffffff;
+      --sidebar-bg: #1e293b;
+      --sidebar-active: #334155;
+      --sidebar-hover: #2d3748;
+    }
 
-        body {
-          display: flex;
-          min-height: 100vh;
-          background-color: #f8f9fa;
-          color: #333;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
 
-        .sidebar {
-          width: 60px;
-          background-color: #2c3e50;
-          transition: width 0.3s ease;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          overflow: hidden;
-          box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-        }
+    body {
+      display: flex;
+      min-height: 100vh;
+      color: var(--dark);
+      background-color: #ffffff;
+    }
 
-        .sidebar.expanded {
-          width: 200px;
-        }
+    /* Sidebar - Dark Theme */
+    .sidebar {
+      width: 80px;
+      background-color: var(--sidebar-bg);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+      z-index: 100;
+    }
 
-        .menu-icon {
-          font-size: 24px;
-          cursor: pointer;
-          margin: 20px 0;
-          padding: 10px;
-          background-color: #34495e;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          transition: all 0.3s ease;
-        }
+    .sidebar.expanded {
+      width: 240px;
+    }
 
-        .menu-icon:hover {
-          background-color: #3d566e;
-          transform: rotate(90deg);
-        }
+    .menu-icon {
+      font-size: 20px;
+      cursor: pointer;
+      margin: 25px 0;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: all 0.3s ease;
+    }
 
-        .sidebar-menu {
-          list-style: none;
-          padding: 0;
-          width: 100%;
-          margin-top: 10px;
-          flex-grow: 1;
-          display: flex;
-          flex-direction: column;
-        }
+    .menu-icon:hover {
+      background-color: var(--primary);
+      transform: rotate(90deg);
+    }
 
-        .sidebar-menu li {
-          padding: 15px;
-          text-align: left;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          transition: background-color 0.3s ease;
-        }
+    .sidebar-menu {
+      list-style: none;
+      padding: 0;
+      width: 100%;
+      margin-top: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
 
-        .sidebar-menu li:hover {
-          background-color: #34495e;
-        }
+    .sidebar-menu li {
+      padding: 14px 20px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      transition: all 0.3s ease;
+      margin: 4px 10px;
+      border-radius: 8px;
+      position: relative;
+    }
 
-        .sidebar-menu a {
-          color: white;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          width: 100%;
-        }
+    .sidebar-menu li:not(.active):hover {
+      background-color: var(--sidebar-hover);
+    }
 
-        .sidebar-menu i {
-          font-size: 18px;
-          min-width: 24px;
-          text-align: center;
-        }
+    .sidebar-menu li.active {
+      background-color: var(--sidebar-active);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
 
-        .sidebar.expanded .sidebar-menu li span {
-          display: inline-block;
-        }
+    .sidebar-menu li.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background-color: var(--primary);
+      border-radius: 4px 0 0 4px;
+    }
 
-        .sidebar-menu span {
-          display: none;
-          white-space: nowrap;
-        }
+    .sidebar-menu li.active a {
+      color: white;
+    }
 
-        .sidebar-menu .logout {
-          margin-top: auto;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
+    .sidebar-menu li.active i {
+      color: var(--primary-light);
+    }
 
-        .main-content {
-          flex-grow: 1;
-          padding: 30px;
-          background-color: #f8f9fa;
-          overflow-y: auto;
-        }
+    .sidebar-menu a {
+      color: var(--gray);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      width: 100%;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+    .sidebar-menu i {
+      font-size: 18px;
+      min-width: 24px;
+      text-align: center;
+      transition: all 0.2s ease;
+      color: var(--gray);
+    }
 
-        h2 {
-            color: #2c3e50;
-            font-weight: 600;
-            margin-bottom: 25px;
-            position: relative;
-            padding-bottom: 10px;
-        }
+    .sidebar-menu li:hover i {
+      color: white;
+    }
 
-        h2:after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 50px;
-            height: 3px;
-            background: linear-gradient(to right, #3498db, #9b59b6);
-        }
+    .sidebar.expanded .sidebar-menu li span {
+      display: inline-block;
+      font-weight: 500;
+    }
 
-        /* Card styling */
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-        }
+    .sidebar-menu span {
+      display: none;
+      white-space: nowrap;
+    }
 
-        .card-header {
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            padding: 15px 20px;
-            border-bottom: none;
-        }
+    .sidebar-menu .logout {
+      margin-top: auto;
+      margin-bottom: 4px;
+    }
 
-        /* Table styling */
-        .table-responsive {
-            border-radius: 8px;
-            overflow: hidden;
-        }
+    .sidebar-menu .logout:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+    }
 
-        .table {
-            margin-bottom: 0;
-            color: #212529;
-        }
+    .sidebar-menu .logout:hover i {
+      color: var(--danger);
+    }
 
-        .table thead th {
-            background-color: #3498db;
-            color: white;
-            font-weight: 500;
-            border: none;
-            padding: 12px 15px;
-        }
+    .profile-wrapper {
+      position: fixed;
+      top: 25px;
+      right: 30px;
+      z-index: 999;
+    }
 
-        .table tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
+    .profile-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+      transition: all 0.3s ease;
+    }
 
-        .table tbody tr:hover {
-            background-color: rgba(52, 152, 219, 0.1);
-        }
+    .profile-icon:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
 
-        .table td, .table th {
-            padding: 12px 15px;
-            vertical-align: middle;
-            border-top: 1px solid #e9ecef;
-        }
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 55px;
+      background-color: var(--card-bg);
+      color: var(--dark);
+      padding: 15px;
+      border-radius: 12px;
+      min-width: 200px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
+    }
 
-        /* Button styling */
-        .btn {
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
+    .profile-dropdown .username {
+      margin: 0;
+      font-weight: 600;
+      color: var(--dark);
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
 
-        .btn-light {
-            background-color: white;
-            color: #3498db;
-            border: 1px solid #3498db;
-        }
+    .profile-dropdown .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--danger);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
 
-        .btn-light:hover {
-            background-color: #f8f9fa;
-            transform: translateY(-1px);
-        }
+    .profile-dropdown .logout-btn:hover {
+      color: #dc2626;
+    }
 
-        .btn-success {
-            background-color: #2ecc71;
-            border: none;
-        }
+    .main-content {
+      flex-grow: 1;
+      padding: 30px;
+      background-color: #f8f9fa;
+      overflow-y: auto;
+    }
 
-        .btn-success:hover {
-            background-color: #27ae60;
-            transform: translateY(-1px);
-        }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-        /* Status badges */
-        .badge {
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-weight: 500;
-            font-size: 12px;
-        }
+    h2 {
+      color: #2c3e50;
+      font-weight: 600;
+      margin-bottom: 25px;
+      position: relative;
+      padding-bottom: 5px;
+    }
 
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 60px;
-            }
+    h2:after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 50px;
+      height: 3px;
+      background: linear-gradient(to right, #3498db, #9b59b6);
+    }
 
-            .sidebar.expanded {
-                width: 180px;
-            }
+    /* Card styling */
+    .card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
 
-            .main-content {
-                padding: 15px;
-            }
+    .card-header {
+      padding: 15px 20px;
+      border-bottom: none;
+    }
 
-            .card-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
+    /* Table styling */
+    .table-responsive {
+      border-radius: 8px;
+      overflow: hidden;
+    }
 
-            .table-responsive {
-                max-height: 60vh;
-            }
-        }
+    .table {
+      margin-bottom: 0;
+      color: #212529;
+    }
 
-        /* Animation for table rows */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    .table thead th {
+      background-color: #3498db;
+      color: white;
+      font-weight: 500;
+      border: none;
+      padding: 12px 15px;
+    }
 
-        .table tbody tr {
-            animation: fadeIn 0.3s ease forwards;
-            opacity: 0;
-        }
+    .table tbody tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
 
-        .table tbody tr:nth-child(1) { animation-delay: 0.1s; }
-        .table tbody tr:nth-child(2) { animation-delay: 0.2s; }
-        .table tbody tr:nth-child(3) { animation-delay: 0.3s; }
-        .table tbody tr:nth-child(4) { animation-delay: 0.4s; }
-        .table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+    .table tbody tr:hover {
+      background-color: rgba(52, 152, 219, 0.1);
+    }
 
-        .custom-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
+    .table td,
+    .table th {
+      padding: 12px 15px;
+      vertical-align: middle;
+      border-top: 1px solid #e9ecef;
+    }
 
-.custom-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(200, 200, 200, 0.4);
-    border-radius: 10px;
-}
+    /* Button styling */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-.custom-scroll::-webkit-scrollbar-track {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-}
+    .btn-light {
+      background-color: white;
+      color: #3498db;
+      border: 1px solid #3498db;
+    }
 
-.custom-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(200, 200, 200, 0.4) rgba(255, 255, 255, 0.1); /* For Firefox */
-}
+    .btn-light:hover {
+      background-color: #f8f9fa;
+      transform: translateY(-1px);
+    }
 
-    </style>
+    .btn-success {
+      background-color: #2ecc71;
+      border: none;
+    }
+
+    .btn-success:hover {
+      background-color: #27ae60;
+      transform: translateY(-1px);
+    }
+
+    /* Status badges */
+    .badge {
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 60px;
+      }
+
+      .sidebar.expanded {
+        width: 180px;
+      }
+
+      .main-content {
+        padding: 15px;
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .table-responsive {
+        max-height: 50vh;
+      }
+    }
+
+    /* Animation for table rows */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .table tbody tr {
+      animation: fadeIn 0.3s ease forwards;
+      opacity: 0;
+    }
+
+    .table tbody tr:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    .table tbody tr:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .table tbody tr:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .table tbody tr:nth-child(4) {
+      animation-delay: 0.4s;
+    }
+
+    .table tbody tr:nth-child(5) {
+      animation-delay: 0.5s;
+    }
+
+    .custom-scroll::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(200, 200, 200, 0.4);
+      border-radius: 10px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    .custom-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(200, 200, 200, 0.4) rgba(255, 255, 255, 0.1);
+      /* For Firefox */
+    }
+  </style>
 </head>
+
 <body>
-    <div class="sidebar" id="sidebar">
-        <div class="menu-icon" id="menu-icon">&#9776;</div>
-        <ul class="sidebar-menu">
-            <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
-            <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
-            <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
-            <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
-        </ul>
+  <div class="sidebar" id="sidebar">
+    <div class="menu-icon" id="menu-icon">
+      <i class="fas fa-bars"></i>
     </div>
+    <ul class="sidebar-menu">
+      <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Dashboard</span></a></li>
+      <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Predictions</span></a></li>
+      <li class="active"><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span>
+            Datasets</span></a></li>
+      <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> History</span></a></li>
+      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>
+      </li>
+    </ul>
+  </div>
 
-    <div class="main-content">
-        <div class="container mt-4">
-            <h2>Prediction Results</h2>
-            
-            <div class="card shadow-sm">
-                <div class="card-header text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>Showing {{ num_results }} predictions</span>
-                        <a href="{{ url_for('bulk_upload') }}" class="btn btn-light btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to Upload
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="card-body p-0">
-                  <div class="table-responsive custom-scroll" style="max-height: 70vh; overflow-y: auto; overflow-x: auto;">
-                    {{ results_table|safe }}
-                    </div>
-                </div>
-                
-                <div class="card-footer bg-white border-top">
-                    <a href="{{ url_for('download_results') }}" class="btn btn-success">
-                        <i class="fas fa-download"></i> Download Results
-                    </a>
-                    <!-- Add this button where appropriate in your existing HTML -->
-<button onclick="window.location.href='/analysis_dashboard'">Analysis</button>
-                </div>
-            </div>
+  <div class="profile-wrapper">
+    <div class="profile-icon" id="profile-toggle">
+      {{ session['name'][0]|upper }}
+    </div>
+    <div class="profile-dropdown" id="profile-dropdown">
+      <p class="username">{{ session['name'] }}</p>
+      <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </a>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="container mt-4">
+      <h2>Prediction Results</h2>
+
+      <div class="card shadow-sm">
+        <div class="card-header text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="color: #3498db;font-weight: bold;">Showing {{ num_results }} predictions</span>
+            <a href="{{ url_for('bulk_upload') }}" class="btn btn-light btn-sm">
+              <i class="fas fa-arrow-left"></i> Back to Upload
+            </a>
+          </div>
         </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive custom-scroll" style="max-height: 61vh; overflow-y: auto; overflow-x: auto;">
+            {{ results_table|safe }}
+          </div>
+        </div>
+
+        <div class="card-footer bg-white border-top">
+          <a href="{{ url_for('download_results') }}" class="btn btn-success">
+            <i class="fas fa-download"></i> Download Results
+          </a>
+          <!-- Add this button where appropriate in your existing HTML -->
+          <button onclick="window.location.href='/analysis_dashboard'"
+            style="background-color: #007BFF; color: white; border: none; padding: 6px 35px; border-radius: 5px; cursor: pointer;">
+            Analysis
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const menuIcon = document.getElementById('menu-icon');
+  <script>
+    // Profile dropdown toggle
+    const profileToggle = document.getElementById('profile-toggle');
+    const dropdown = document.getElementById('profile-dropdown');
 
-        menuIcon.addEventListener('click', () => {
-            sidebar.classList.toggle('expanded');
-        });
+    profileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    // Sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const menuIcon = document.getElementById('menu-icon');
 
-        window.addEventListener('resize', () => {
-            if (window.innerWidth <= 768) {
-                sidebar.classList.remove('expanded');
-            }
-        });
-    </script>
+    menuIcon.addEventListener('click', () => {
+      sidebar.classList.toggle('expanded');
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('expanded');
+      }
+    });
+  </script>
 </body>
+
 </html>
