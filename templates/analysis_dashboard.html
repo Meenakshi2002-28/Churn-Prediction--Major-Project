@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Churn Analysis Dashboard</title>
+    <!-- Load libraries in correct order -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <!-- Then load the plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-boxplot@latest/dist/chartjs-chart-boxplot.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-violin@0.4.0/dist/chartjs-chart-violin.min.js"></script>
+    <!-- Then load Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            min-height: 300px;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        
+    </style>
+</head>
+<body class="bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Customer Churn Analysis</h1>
+            <p class="text-gray-600">Generated on {{ now.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="dashboard-card">
+                <h3 class="text-gray-500 font-medium">Total Customers</h3>
+                <p class="text-2xl font-bold">{{ metrics.total_customers }}</p>
+            </div>
+            <div class="dashboard-card">
+                <h3 class="text-gray-500 font-medium">Churn Rate</h3>
+                <p class="text-2xl font-bold text-red-500">{{ metrics.churn_rate }}%</p>
+            </div>
+            <div class="dashboard-card">
+                <h3 class="text-gray-500 font-medium">Avg Engagement</h3>
+                <p class="text-2xl font-bold">{{ metrics.avg_engagement }}</p>
+            </div>
+            <div class="dashboard-card">
+                <h3 class="text-gray-500 font-medium">Avg Weekly Hours</h3>
+                <p class="text-2xl font-bold">{{ metrics.avg_weekly_hours }}</p>
+            </div>
+        </div>
+        <!-- Chart Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Chart 1: Churn Distribution (Donut) -->
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-4">Churn Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="churnChart"></canvas>
+                </div>
+            </div>
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-4">Subscription Type Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="subscriptionChart"></canvas>
+                </div>
+            </div>
+            <!-- Chart 2: Age Distribution (Box Plot) -->
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-4">Age Distribution by Churn Status</h2>
+                <div class="chart-container">
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+            <!-- Chart 3: Engagement vs Churn (Violin) -->
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-4">Engagement Score Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="engagementChart"></canvas>
+                </div>
+            </div>
+           
+            <!-- Chart 5: Weekly Hours vs Skip Rate (Scatter) -->
+            <div class="dashboard-card lg:col-span-2">
+                <h2 class="text-xl font-semibold mb-4">Weekly Hours vs Skip Rate</h2>
+                <div class="chart-container">
+                    <canvas id="scatterChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Debug function to verify data
+        function debugChartData(chartName, data) {
+            console.log(`[DEBUG] ${chartName} data:`, data);
+            return data;
+        }
+
+        // Verify plugin availability
+        function verifyPlugins() {
+            console.log("BoxPlot plugin available:", typeof Chart.BoxPlot !== 'undefined');
+            console.log("Violin plugin available:", typeof Chart.Violin !== 'undefined');
+        }
+
+        // Safe chart initialization with error handling
+        function initChartSafe(canvasId, config) {
+            try {
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) {
+                    console.error(`Canvas element #${canvasId} not found`);
+                    return null;
+                }
+                // Verify required chart type is available
+                if (config.type === 'boxplot' && typeof Chart.BoxPlot === 'undefined') {
+                    console.error('BoxPlot plugin not loaded. Skipping chart initialization.');
+                    return null;
+                }
+                if (config.type === 'violin' && typeof Chart.Violin === 'undefined') {
+                    console.error('Violin plugin not loaded. Skipping chart initialization.');
+                    return null;
+                }
+                return new Chart(ctx, config);
+            } catch (error) {
+                console.error(`Error initializing ${canvasId}:`, error);
+                return null;
+            }
+        }
+
+        // Initialize all charts when DOM loads
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("Initializing charts...");
+            verifyPlugins();
+
+            // 1. Donut Chart - Churn Distribution
+            initChartSafe('churnChart', {
+    type: 'doughnut',
+    data: {
+        labels: debugChartData('Churn Labels', JSON.parse('{{ churn_data.labels | tojson | safe }}')),
+        datasets: [{
+            data: debugChartData('Churn Counts', JSON.parse('{{ churn_data.counts | tojson | safe }}')),
+            backgroundColor: ['#0A2F5C', '#7FB3FF'], // dark blue + light blue
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percent = Math.round((context.raw / total) * 100);
+                        return `${context.label}: ${context.raw} (${percent}%)`;
+                    }
+                }
+            }
+        },
+        cutout: '65%'
+    }
+});
+
+
+            // 2. Box Plot - Age Distribution
+            initChartSafe('ageChart', {
+                type: 'boxplot',
+                data: {
+                    labels: ['Not Churn', 'Churn'],
+                    datasets: [{
+                        label: 'Age Distribution',
+                        data: [
+                            debugChartData('Age Not Churn', JSON.parse('{{ age_data.not_churn | tojson | safe }}')),
+                            debugChartData('Age Churn', JSON.parse('{{ age_data.churn | tojson | safe }}'))
+                        ],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // 3. Violin Plot - Engagement Scores
+            initChartSafe('engagementChart', {
+                type: 'violin',
+                data: {
+                    labels: ['Not Churn', 'Churn'],
+                    datasets: [{
+                        label: 'Engagement Score',
+                        data: [
+                            debugChartData('Engagement Not Churn', JSON.parse('{{ engagement_data.not_churn | tojson | safe }}')),
+                            debugChartData('Engagement Churn', JSON.parse('{{ engagement_data.churn | tojson | safe }}'))
+                        ],
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // 4. Bar Chart - Subscription Types
+            initChartSafe('subscriptionChart', {
+                type: 'bar',
+                data: {
+                    labels: debugChartData('Subscription Types', JSON.parse('{{ subscription_data.types | tojson | safe }}')),
+                    datasets: [
+                        {
+                            label: 'Not Churn',
+                            data: debugChartData('Sub Not Churn', JSON.parse('{{ subscription_data.not_churn | tojson | safe }}')),
+                            backgroundColor: '#4CAF50'
+                        },
+                        {
+                            label: 'Churn',
+                            data: debugChartData('Sub Churn', JSON.parse('{{ subscription_data.churn | tojson | safe }}')),
+                            backgroundColor: '#F44336'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // 5. Scatter Plot - Hours vs Skip Rate
+            initChartSafe('scatterChart', {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Not Churn',
+                            data: debugChartData('Scatter Not Churn', JSON.parse('{{ scatter_data.not_churn | tojson | safe }}')),
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Churn',
+                            data: debugChartData('Scatter Churn', JSON.parse('{{ scatter_data.churn | tojson | safe }}')),
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                            pointRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Weekly Hours' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Skip Rate' }
+                        }
+                    }
+                }
+            });
+
+            console.log("Chart initialization complete");
+        });
+    </script>
+</body>
+</html>
