@@ -1,39 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Font: Playwrite AU SA -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playwrite+AU+SA:wght@100..400&display=swap" rel="stylesheet">
 
-  <title>Dashboard</title>
+
+  <title>Customer Churn Prediction</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      font-family: 'Roboto', sans-serif;
     }
 
     body {
-      font-family: Arial, sans-serif;
       display: flex;
       height: 100vh;
-      background-color: #1c1b29;
-      color: white;
+      color: black;
+      background-color: #f8f9fa
     }
 
     .sidebar {
       width: 60px;
-      background-color: #1c1b29;
+      background-color: #0d2b4b;
       transition: width 0.3s ease;
       display: flex;
       flex-direction: column;
       align-items: center;
       overflow: hidden;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }
 
     .sidebar.expanded {
-      width: 150px;
+      width: 200px;
     }
 
     .menu-icon {
@@ -41,13 +47,20 @@
       cursor: pointer;
       margin: 20px 0;
       padding: 10px;
-      background-color: #34495e;
+      background-color: #374e64;
       border-radius: 50%;
       width: 40px;
       height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
+      color: white;
+      transition: all 0.3s ease;
+    }
+
+    .menu-icon:hover {
+      background-color: #3d566e;
+      transform: rotate(90deg);
     }
 
     .sidebar-menu {
@@ -62,11 +75,16 @@
 
     .sidebar-menu li {
       padding: 15px;
-      text-align: center;
-      border-bottom: 1px solid #34495e;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      transition: background-color 0.3s ease;
+    }
+
+    .sidebar-menu li:hover {
+      background-color: #34495e;
     }
 
     .sidebar-menu a {
@@ -75,11 +93,22 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      width: 100%;
     }
 
     .sidebar-menu i {
       font-size: 18px;
+      min-width: 24px;
+      text-align: center;
+      transition: transform 0.2s ease, color 0.2s ease;
     }
+
+    .sidebar-menu li:hover i {
+      transform: scale(1.2);
+      /* slightly bigger on hover */
+      /* optional: adds a nice hover color */
+    }
+
 
     .sidebar.expanded .sidebar-menu li span {
       display: inline-block;
@@ -87,23 +116,94 @@
 
     .sidebar-menu span {
       display: none;
+      white-space: nowrap;
     }
 
     .sidebar-menu .logout {
       margin-top: auto;
-      border-top: 1px solid #34495e;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
+
+        .profile-wrapper {
+          position: fixed;
+          top: 15px;
+          right: 20px;
+          z-index: 999;
+        }
+
+        .profile-icon{
+          font-size: 30px;
+          color: black;
+          opacity: 0.7; /* Initial opacity */
+          transform: scale(0.8); /* Start smaller */
+          transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth animation */          
+          cursor: pointer;
+          margin-right: 10px;
+        }
+
+        .profile-wrapper:hover .profile-icon {
+          opacity: 1; /* Full opacity */
+          transform: scale(1); /* Grow to normal size */
+        }
+
+        .profile-dropdown {
+          display: none;
+          position: absolute;
+          right: 0;
+          top: 40px;
+          background-color: #0d2b4b;
+          color: white;
+          padding: 10px 15px;
+          border-radius: 10px;
+          min-width: 150px;
+        }
+
+        .profile-dropdown .username {
+          margin: 0;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn {
+          display: block;
+          margin-top: 10px;
+          color: #ffffff;
+          text-decoration: none;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn:hover {
+          text-decoration: underline;
+        }
 
     .main-content {
       flex-grow: 1;
       padding: 20px;
-      background-color: #9995ab58;
+      background-color: #ffffff
     }
 
     .header h1 {
       margin-bottom: 20px;
       font-size: 24px;
+      color: black;
     }
+
+    @keyframes slideInFade {
+      0% {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .header h1 {
+      animation: slideInFade 0.8s ease-out;
+      margin-top: 8px;
+    }
+
 
     .dashboard-metrics {
       display: grid;
@@ -112,12 +212,21 @@
     }
 
     .metric-box {
-      background-color: #1F1D2B;
+      background-color: #123458;
       padding: 20px;
       border-radius: 8px;
       text-align: center;
       color: white;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideInFade 0.8s ease-out forwards;
+    }
+
+
+    .metric-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
     }
 
     .metric-box h2 {
@@ -128,6 +237,18 @@
     .metric-box p {
       font-size: 30px;
       font-weight: bold;
+    }
+
+    .delay-1 {
+      animation-delay: 0.3s;
+    }
+
+    .delay-2 {
+      animation-delay: 0.4s;
+    }
+
+    .delay-3 {
+      animation-delay: 0.5s;
     }
 
     @media (max-width: 768px) {
@@ -148,39 +269,56 @@
       .main-content {
         padding: 10px;
       }
+
+
     }
   </style>
 </head>
+
 <body>
   <div class="sidebar" id="sidebar">
     <div class="menu-icon" id="menu-icon">&#9776;</div>
-
     <ul class="sidebar-menu">
-      <li><a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-house"></i><span> Home</span></a></li>
+      <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
       <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
       <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
-      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
+      <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> Past Predictions</span></a>
+      </li>
+      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>
+      </li>
     </ul>
   </div>
 
+<div class="profile-wrapper">
+  <div class="profile-icon" id="profile-toggle">
+    <i class="fas fa-user"></i>
+  </div>
+
+  <div class="profile-dropdown" id="profile-dropdown">
+    <p class="username">{{ session['name'] }}</p>
+    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+  </div>
+</div>
+
   <div class="main-content">
     <div class="header">
-      <h1>Welcome {{ session['name'] }}</h1>
+      <h1 style="font-family: 'Georgia', serif;">Welcome {{ session['name'] }}</h1>
     </div>
     <div class="dashboard-metrics">
-      <div class="metric-box">
+      <div class="metric-box delay-1">
         <h2>Total Users</h2>
         <p>1,25,000</p>
       </div>
-      <div class="metric-box">
+      <div class="metric-box delay-2">
         <h2>Churned Users</h2>
         <p>35,000</p>
       </div>
-      <div class="metric-box">
+      <div class="metric-box delay-3">
         <h2>Retained Users</h2>
         <p>90,000</p>
       </div>
     </div>
+
   </div>
 
   <script>
@@ -196,6 +334,19 @@
         sidebar.classList.remove('expanded');
       }
     });
+
+    const profileToggle = document.getElementById('profile-toggle');
+    const dropdown = document.getElementById('profile-dropdown');
+
+    profileToggle.addEventListener('click', () => {
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    window.addEventListener('click', function (e) {
+        if (!profileToggle.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
   </script>
 </body>
+
 </html>
