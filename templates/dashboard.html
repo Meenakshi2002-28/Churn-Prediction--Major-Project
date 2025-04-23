@@ -5,50 +5,61 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-  <!-- Google Font: Playwrite AU SA -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playwrite+AU+SA:wght@100..400&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <title>Customer Churn Prediction</title>
   <style>
+    :root {
+      --primary: #7c3aed;
+      --primary-light: #8b5cf6;
+      --secondary: #10b981;
+      --danger: #ef4444;
+      --dark: #0f172a;
+      --light: #f8fafc;
+      --gray: #94a3b8;
+      --card-bg: #ffffff;
+      --sidebar-bg: #1e293b;
+      --sidebar-active: #334155;
+      --sidebar-hover: #2d3748;
+    }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Roboto', sans-serif;
+      font-family: 'Inter', sans-serif;
     }
 
     body {
       display: flex;
-      height: 100vh;
-      color: black;
-      background-color: #f8f9fa
+      min-height: 100vh;
+      color: var(--dark);
+      background-color: #f1f5f9;
     }
 
+    /* Sidebar - Dark Theme */
     .sidebar {
-      width: 60px;
-      background-color: #0d2b4b;
-      transition: width 0.3s ease;
+      width: 80px;
+      background-color: var(--sidebar-bg);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       align-items: center;
       overflow: hidden;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 100;
     }
 
     .sidebar.expanded {
-      width: 200px;
+      width: 240px;
     }
 
     .menu-icon {
-      font-size: 24px;
+      font-size: 20px;
       cursor: pointer;
-      margin: 20px 0;
+      margin: 25px 0;
       padding: 10px;
-      background-color: #374e64;
-      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
       width: 40px;
       height: 40px;
       display: flex;
@@ -59,7 +70,7 @@
     }
 
     .menu-icon:hover {
-      background-color: #3d566e;
+      background-color: var(--primary);
       transform: rotate(90deg);
     }
 
@@ -74,44 +85,71 @@
     }
 
     .sidebar-menu li {
-      padding: 15px;
+      padding: 14px 20px;
       text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      margin: 4px 10px;
+      border-radius: 8px;
+      position: relative;
     }
 
-    .sidebar-menu li:hover {
-      background-color: #34495e;
+    .sidebar-menu li:not(.active):hover {
+      background-color: var(--sidebar-hover);
+    }
+
+    .sidebar-menu li.active {
+      background-color: var(--sidebar-active);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .sidebar-menu li.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background-color: var(--primary);
+      border-radius: 4px 0 0 4px;
+    }
+
+    .sidebar-menu li.active a {
+      color: white;
+    }
+
+    .sidebar-menu li.active i {
+      color: var(--primary-light);
     }
 
     .sidebar-menu a {
-      color: white;
+      color: var(--gray);
       text-decoration: none;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 15px;
       width: 100%;
+      font-weight: 500;
+      transition: color 0.2s ease;
     }
 
     .sidebar-menu i {
       font-size: 18px;
       min-width: 24px;
       text-align: center;
-      transition: transform 0.2s ease, color 0.2s ease;
+      transition: all 0.2s ease;
+      color: var(--gray);
     }
 
     .sidebar-menu li:hover i {
-      transform: scale(1.2);
-      /* slightly bigger on hover */
-      /* optional: adds a nice hover color */
+      color: white;
     }
-
 
     .sidebar.expanded .sidebar-menu li span {
       display: inline-block;
+      font-weight: 500;
     }
 
     .sidebar-menu span {
@@ -121,207 +159,342 @@
 
     .sidebar-menu .logout {
       margin-top: auto;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 20px;
     }
 
-        .profile-wrapper {
-          position: fixed;
-          top: 15px;
-          right: 20px;
-          z-index: 999;
-        }
+    .sidebar-menu .logout:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+    }
 
-        .profile-icon{
-          font-size: 30px;
-          color: black;
-          opacity: 0.7; /* Initial opacity */
-          transform: scale(0.8); /* Start smaller */
-          transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth animation */          
-          cursor: pointer;
-          margin-right: 10px;
-        }
+    .sidebar-menu .logout:hover i {
+      color: var(--danger);
+    }
 
-        .profile-wrapper:hover .profile-icon {
-          opacity: 1; /* Full opacity */
-          transform: scale(1); /* Grow to normal size */
-        }
+    /* Rest of your existing CSS remains the same */
+    /* Profile Dropdown */
+    .profile-wrapper {
+      position: fixed;
+      top: 25px;
+      right: 30px;
+      z-index: 999;
+    }
 
-        .profile-dropdown {
-          display: none;
-          position: absolute;
-          right: 0;
-          top: 40px;
-          background-color: #0d2b4b;
-          color: white;
-          padding: 10px 15px;
-          border-radius: 10px;
-          min-width: 150px;
-        }
+    .profile-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+      transition: all 0.3s ease;
+    }
 
-        .profile-dropdown .username {
-          margin: 0;
-          font-weight: bold;
-        }
+    .profile-icon:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
 
-        .profile-dropdown .logout-btn {
-          display: block;
-          margin-top: 10px;
-          color: #ffffff;
-          text-decoration: none;
-          font-weight: bold;
-        }
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 55px;
+      background-color: var(--card-bg);
+      color: var(--dark);
+      padding: 15px;
+      border-radius: 12px;
+      min-width: 200px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
+    }
 
-        .profile-dropdown .logout-btn:hover {
-          text-decoration: underline;
-        }
+    .profile-dropdown .username {
+      margin: 0;
+      font-weight: 600;
+      color: var(--dark);
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
 
+    .profile-dropdown .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--danger);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .profile-dropdown .logout-btn:hover {
+      color: #dc2626;
+    }
+
+    /* Main Content */
     .main-content {
       flex-grow: 1;
-      padding: 20px;
-      background-color: #ffffff
+      padding: 30px;
+      background-color: #f1f5f9;
+      transition: margin-left 0.3s ease;
+    }
+
+    .header {
+      background-color: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     }
 
     .header h1 {
-      margin-bottom: 20px;
-      font-size: 24px;
-      color: black;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--dark);
+      position: relative;
     }
 
-    @keyframes slideInFade {
-      0% {
-        transform: translateY(-20px);
-        opacity: 0;
-      }
-
-      100% {
-        transform: translateY(0);
-        opacity: 1;
-      }
+    .header h1 span {
+      color: var(--primary);
     }
 
-    .header h1 {
-      animation: slideInFade 0.8s ease-out;
-      margin-top: 8px;
-    }
-
-
+    /* Dashboard Metrics */
     .dashboard-metrics {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
     }
 
     .metric-box {
-      background-color: #123458;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      color: white;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-      opacity: 0;
-      transform: translateY(20px);
-      animation: slideInFade 0.8s ease-out forwards;
+      background-color: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      border-left: 4px solid var(--primary);
     }
 
+    .metric-box.total {
+      border-left-color: var(--primary);
+    }
+
+    .metric-box.churned {
+      border-left-color: var(--danger);
+    }
+
+    .metric-box.retained {
+      border-left-color: var(--secondary);
+    }
 
     .metric-box:hover {
       transform: translateY(-5px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     }
 
-    .metric-box h2 {
+    .metric-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .metric-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
       font-size: 20px;
-      margin-bottom: 10px;
     }
 
-    .metric-box p {
-      font-size: 30px;
-      font-weight: bold;
+    .metric-icon.total {
+      background-color: rgba(79, 70, 229, 0.1);
+      color: var(--primary);
     }
 
-    .delay-1 {
-      animation-delay: 0.3s;
+    .metric-icon.churned {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
     }
 
-    .delay-2 {
-      animation-delay: 0.4s;
+    .metric-icon.retained {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: var(--secondary);
     }
 
-    .delay-3 {
-      animation-delay: 0.5s;
+    .metric-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--gray);
     }
 
+    .metric-value {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 5px 0;
+      color: var(--dark);
+    }
+
+    .metric-change {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .change-up {
+      color: var(--secondary);
+    }
+
+    .change-down {
+      color: var(--danger);
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
       .sidebar {
-        width: 60px;
+        width: 70px;
       }
 
       .sidebar.expanded {
-        width: 100px;
-      }
-
-      .menu-icon {
-        font-size: 20px;
-        width: 35px;
-        height: 35px;
+        width: 220px;
       }
 
       .main-content {
-        padding: 10px;
+        padding: 20px;
       }
 
+      .header {
+        padding: 20px;
+      }
 
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .dashboard-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-wrapper {
+        right: 20px;
+        top: 20px;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .metric-box {
+      animation: fadeIn 0.5s ease-out forwards;
+      opacity: 0;
+    }
+
+    .delay-1 {
+      animation-delay: 0.1s;
+    }
+
+    .delay-2 {
+      animation-delay: 0.2s;
+    }
+
+    .delay-3 {
+      animation-delay: 0.3s;
     }
   </style>
 </head>
 
 <body>
   <div class="sidebar" id="sidebar">
-    <div class="menu-icon" id="menu-icon">&#9776;</div>
+    <div class="menu-icon" id="menu-icon">
+      <i class="fas fa-bars"></i>
+    </div>
     <ul class="sidebar-menu">
-      <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
-      <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
-      <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
-      <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> Past Predictions</span></a>
-      </li>
-      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>
-      </li>
+      <li class="active"><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Dashboard</span></a></li>
+      <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Predictions</span></a></li>
+      <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Datasets</span></a></li>
+      <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> History</span></a></li>
+      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
     </ul>
   </div>
 
-<div class="profile-wrapper">
-  <div class="profile-icon" id="profile-toggle">
-    <i class="fas fa-user"></i>
+  <div class="profile-wrapper">
+    <div class="profile-icon" id="profile-toggle">
+      {{ session['name'][0]|upper }}
+    </div>
+    <div class="profile-dropdown" id="profile-dropdown">
+      <p class="username">{{ session['name'] }}</p>
+      <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </a>
+    </div>
   </div>
-
-  <div class="profile-dropdown" id="profile-dropdown">
-    <p class="username">{{ session['name'] }}</p>
-    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-  </div>
-</div>
 
   <div class="main-content">
     <div class="header">
-      <h1 style="font-family: 'Georgia', serif;">Welcome {{ session['name'] }}</h1>
+      <h1>Welcome back, <span>{{ session['name'] }}</span></h1>
     </div>
     <div class="dashboard-metrics">
-      <div class="metric-box delay-1">
-        <h2>Total Users</h2>
-        <p>1,25,000</p>
+      <div class="metric-box total delay-1">
+        <div class="metric-header">
+          <div class="metric-icon total">
+            <i class="fas fa-users"></i>
+          </div>
+          <div>
+            <div class="metric-title">Total Users</div>
+            <div class="metric-value">125,000</div>
+            <div class="metric-change change-up">
+              <i class="fas fa-arrow-up"></i> 12% from last month
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="metric-box delay-2">
-        <h2>Churned Users</h2>
-        <p>35,000</p>
+      
+      <div class="metric-box churned delay-2">
+        <div class="metric-header">
+          <div class="metric-icon churned">
+            <i class="fas fa-user-minus"></i>
+          </div>
+          <div>
+            <div class="metric-title">Churned Users</div>
+            <div class="metric-value">35,000</div>
+            <div class="metric-change change-down">
+              <i class="fas fa-arrow-down"></i> 8% from last month
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="metric-box delay-3">
-        <h2>Retained Users</h2>
-        <p>90,000</p>
+      
+      <div class="metric-box retained delay-3">
+        <div class="metric-header">
+          <div class="metric-icon retained">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div>
+            <div class="metric-title">Retained Users</div>
+            <div class="metric-value">90,000</div>
+            <div class="metric-change change-up">
+              <i class="fas fa-arrow-up"></i> 5% from last month
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
   </div>
 
   <script>
+    // Sidebar toggle
     const sidebar = document.getElementById('sidebar');
     const menuIcon = document.getElementById('menu-icon');
 
@@ -329,24 +502,31 @@
       sidebar.classList.toggle('expanded');
     });
 
+    // Profile dropdown toggle
+    const profileToggle = document.getElementById('profile-toggle');
+    const dropdown = document.getElementById('profile-dropdown');
+
+    profileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Close dropdown when clicking outside
+    window.addEventListener('click', function() {
+      dropdown.style.display = 'none';
+    });
+
+    // Prevent dropdown from closing when clicking inside it
+    dropdown.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+
+    // Responsive adjustments
     window.addEventListener('resize', () => {
       if (window.innerWidth <= 768) {
         sidebar.classList.remove('expanded');
       }
     });
-
-    const profileToggle = document.getElementById('profile-toggle');
-    const dropdown = document.getElementById('profile-dropdown');
-
-    profileToggle.addEventListener('click', () => {
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    });
-    window.addEventListener('click', function (e) {
-        if (!profileToggle.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.style.display = 'none';
-        }
-    });
   </script>
 </body>
-
 </html>
