@@ -5,117 +5,203 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     
-    <title>Prediction</title>
+    <title>Customer Churn Prediction</title>
     <style>
         * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
+          font-family: 'Roboto', sans-serif;
         }
 
         body {
-          font-family: Arial, sans-serif;
           display: flex;
-          height: 100vh;
+          min-height: 100vh;
           background-color: #1c1b29;
           color: white;
         }
 
         .sidebar {
           width: 60px;
-          background-color: #1c1b29;
+          background-color: #0d2b4b;
           transition: width 0.3s ease;
           display: flex;
           flex-direction: column;
           align-items: center;
           overflow: hidden;
+          position: fixed;
+          height: 100vh;
+          z-index: 100;
+          box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
         }
 
         .sidebar.expanded {
-          width: 150px;
+          width: 200px;
         }
 
         .menu-icon {
+      font-size: 24px;
+      cursor: pointer;
+      margin: 20px 0;
+      padding: 10px;
+      background-color: #374e64;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: all 0.3s ease;
+    }
+
+        
+    .menu-icon:hover {
+      background-color: #3d566e;
+      transform: rotate(90deg);
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      padding: 0;
+      width: 100%;
+      margin-top: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-menu li {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      transition: background-color 0.3s ease;
+    }
+
+    .sidebar-menu li:hover {
+      background-color: #34495e;
+    }
+
+    .sidebar-menu a {
+      color: white;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .sidebar-menu i {
+      font-size: 18px;
+      min-width: 24px;
+      text-align: center;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .sidebar-menu li:hover i {
+      transform: scale(1.2);
+      /* slightly bigger on hover */
+      /* optional: adds a nice hover color */
+    }
+
+
+    .sidebar.expanded .sidebar-menu li span {
+      display: inline-block;
+    }
+
+    .sidebar-menu span {
+      display: none;
+      white-space: nowrap;
+    }
+
+    .sidebar-menu .logout {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+        .profile-wrapper {
+          position: fixed;
+          top: 15px;
+          right: 20px;
+          z-index: 999;
+        }
+
+        .profile-icon{
           font-size: 24px;
+          color: black;
           cursor: pointer;
-          margin: 20px 0;
-          padding: 10px;
-          background-color: #34495e;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          margin-right: 10px;
         }
 
-        .sidebar-menu {
-          list-style: none;
-          padding: 0;
-          width: 100%;
-          margin-top: 10px;
-          flex-grow: 1;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .sidebar-menu li {
-          padding: 15px;
-          text-align: center;
-          border-bottom: 1px solid #34495e;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .sidebar-menu a {
-          color: white;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .sidebar-menu i {
-          font-size: 18px;
-        }
-
-        .sidebar.expanded .sidebar-menu li span {
-          display: inline-block;
-        }
-
-        .sidebar-menu span {
+        .profile-dropdown {
           display: none;
+          position: absolute;
+          right: 0;
+          top: 40px;
+          background-color: #2c2b3c;
+          color: white;
+          padding: 10px 15px;
+          border-radius: 10px;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+          min-width: 150px;
         }
 
-        .sidebar-menu .logout {
-          margin-top: auto;
-          border-top: 1px solid #34495e;
+        .profile-dropdown .username {
+          margin: 0;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn {
+          display: block;
+          margin-top: 10px;
+          color: #ffffff;
+          text-decoration: none;
+          font-weight: bold;
+        }
+
+        .profile-dropdown .logout-btn:hover {
+          text-decoration: underline;
         }
 
         .main-content {
           flex-grow: 1;
           padding: 20px;
-          background-color: #9995ab58;
+          background-color: #f8f9fa;
+          margin-left: 60px;
+          width: calc(100% - 60px);
+        }
+
+        .sidebar.expanded ~ .main-content {
+          margin-left: 150px;
+          width: calc(100% - 150px);
         }
 
         h1 {
             text-align: center;
             font-weight: bold;
-            color: white;
-        }
+            color: black;
+            margin-bottom: 10px;
+            
+    font-family: 'Georgia', serif;
+}
+
+        
 
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: #1F1D2B;
+            background: #123458;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
         }
 
         label {
             font-weight: bold;
+            color: white
         }
 
         .form-group {
@@ -133,14 +219,15 @@
         }
 
         .predict-btn {
-            background-color: red;
-            color: white;
+            background-color:#D3d3d3;
+            color: black;
             font-weight: bold;
             cursor: pointer;
+            font-size: 16px;
         }
 
         .predict-btn:hover {
-            background-color: darkred;
+            background-color: #cbcbcb;
         }
 
         .result {
@@ -177,23 +264,50 @@
 
           .main-content {
             padding: 10px;
+            margin-left: 60px;
+            width: calc(100% - 60px);
+          }
+          
+          .sidebar.expanded ~ .main-content {
+            margin-left: 100px;
+            width: calc(100% - 100px);
+          }
+          
+          input,
+          select,
+          button {
+              width: 100%;
           }
         }
     </style>
 </head>
 <body>
-    <div class="sidebar" id="sidebar">
-        <div class="menu-icon" id="menu-icon">&#9776;</div>
-        <ul class="sidebar-menu">
-          <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
-          <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
-          <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
-            <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
-        </ul>
-    </div>
+  <div class="sidebar" id="sidebar">
+    <div class="menu-icon" id="menu-icon">&#9776;</div>
+    <ul class="sidebar-menu">
+      <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Home</span></a></li>
+      <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Prediction</span></a></li>
+      <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Dataset</span></a></li>
+      <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> Past Predictions</span></a>
+      </li>
+      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>
+      </li>
+    </ul>
+  </div>
 
+    <div class="profile-wrapper">
+      <div class="profile-icon" id="profile-toggle">
+        <i class="fas fa-user"></i>
+      </div>
+    
+      <div class="profile-dropdown" id="profile-dropdown">
+        <p class="username">{{ session['name'] }}</p>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+      </div>
+    </div>    
+  
     <div class="main-content">
-        <h1>CUSTOMER CHURN PREDICTION</h1>
+      <h1>Customer Churn Prediction</h1>
         <div class="container">
           <form id="churnForm" action="{{ url_for('predict') }}" method="POST">
             <div class="form-group">
@@ -332,6 +446,19 @@
           if (window.innerWidth <= 768) {
             sidebar.classList.remove('expanded');
           }
+        });
+
+        const profileToggle = document.getElementById('profile-toggle');
+        const dropdown = document.getElementById('profile-dropdown');
+
+        profileToggle.addEventListener('click', () => {
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        window.addEventListener('click', function (e) {
+            if (!profileToggle.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
         });
     </script>
 </body>
