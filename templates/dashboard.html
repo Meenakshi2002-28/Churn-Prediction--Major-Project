@@ -633,14 +633,10 @@ canvas {
         }
       });
     </script>
-    <script>
-      document.getElementById('menu-icon').addEventListener('click', function () {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('expanded');
-      });
-    </script>
+
     
     <script>
+      window.addEventListener('DOMContentLoaded', () => {
       // Donut Chart: Current State (Compact)
       new Chart(document.getElementById('churnDonut'), {
         type: 'doughnut',
@@ -898,6 +894,7 @@ canvas {
           }
         }
       });
+    });
     </script>
     </body>
     </html>
