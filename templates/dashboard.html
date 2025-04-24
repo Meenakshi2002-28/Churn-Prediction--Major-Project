@@ -495,6 +495,44 @@ canvas {
     width: 100% !important;
     height: 150px !important;
 }
+/* Updated Chart Styles */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.chart-box {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.chart-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.chart-box h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--dark);
+}
+
+.chart-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Remove fixed canvas dimensions */
+.chart-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
     
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -572,32 +610,49 @@ canvas {
       </div>
     </div>
 
-   <!-- Charts Section -->
-<!-- Charts Section -->
-<div class="dashboard-charts" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-
-  <!-- Top Row: Donut & Line Chart -->
-  <div style="display: flex; gap: 8px; height: 200px;"> <!-- Reduced height -->
-    <!-- Donut Chart Box -->
-    <div style="flex: 1; background: white; border-radius: 8px; padding: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-      <h3 style="font-size: 14px; margin-bottom: 5px;">Current Churn State</h3>
-      <canvas id="churnDonut" style="height: 150px !important;"></canvas>
+  <!-- Charts Section -->
+<div class="dashboard-charts" style="display: flex; gap: 20px; margin-top: 30px;">
+  
+  <!-- Left Side: Donut Chart -->
+  <div class="chart-box" style="flex: 1; padding: 20px; height: 380px;">
+    <h2>Churn Distribution</h2>
+    <div style="height: 250px; position: relative; margin: 20px 0;">
+      <canvas id="churnDonut"></canvas>
     </div>
-
-    <!-- Line Chart Box -->
-    <div style="flex: 1; background: white; border-radius: 8px; padding: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-      <h3 style="font-size: 14px; margin-bottom: 5px;">Engagement Trends</h3>
-      <canvas id="weeklyLine" style="height: 150px !important;"></canvas>
+    <div style="margin-top: 20px; text-align: center;">
+      <div style="display: inline-block; margin: 0 15px;">
+       
+        
+      </div>
+      <div style="display: inline-block; margin: 0 15px;">
+       
+       
+      </div>
     </div>
   </div>
 
-  <!-- Bottom Row: Bar Chart -->
-  <div style="height: 180px; background: white; border-radius: 8px; padding: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-    <h3 style="font-size: 14px; margin-bottom: 5px;">Top Churn Factors</h3>
+  <!-- Right Side: Line Chart on top, Bar Chart below -->
+  <div style="flex: 2; display: flex; flex-direction: column; gap: 20px;">
+    
+    <!-- Line Chart -->
+    <div class="chart-box" style="padding: 20px; height: 195px;">
+      <h2>Engagement Metrics</h2>
+      <div style="height: 140px; position: relative;">
+        <canvas id="weeklyLine"></canvas>
+      </div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="chart-box" style="padding: 20px; height: 180px;">
+      <h3 style="font-size: 14px; margin-bottom: 5px;">Top Churn Factors</h3>
     <canvas id="churnFactors" style="height: 150px !important;"></canvas>
+      </div>
+    </div>
+
   </div>
+
 </div>
-</div>
+
     <script>
       // Sidebar toggle
       const sidebar = document.getElementById('sidebar');
