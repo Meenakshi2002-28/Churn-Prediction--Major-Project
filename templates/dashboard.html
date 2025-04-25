@@ -19,7 +19,7 @@
       --gray: #94a3b8;
       --card-bg: #ffffff;
       --sidebar-bg: #1e293b;
-      --sidebar-active: #334155;
+      --sidebar-active: #334155;            
       --sidebar-hover: #2d3748;
     }
 
@@ -242,6 +242,7 @@
       padding: 30px;
       background-color: #f1f5f9;
       transition: margin-left 0.3s ease;
+      overflow: hidden;
     }
 
     .header {
@@ -392,8 +393,15 @@
 
     /* Animations */
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .metric-box {
@@ -412,7 +420,124 @@
     .delay-3 {
       animation-delay: 0.3s;
     }
+
+    .dashboard-charts {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .chart-box {
+      background-color: var(--card-bg);
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      height: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .chart-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-box h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--dark);
+    }
+
+    .chart-box canvas {
+  width: 80% !important;
+  height: 60px !important;
+}
+
+
+    .chart-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .chart-inner {
+      background-color: var(--card-bg);
+      padding: 15px;
+      border-radius: 10px;
+      height: 180px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Chart Containers */
+.dashboard-charts h3 {
+    margin: 0 0 8px 0;
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 14px;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.chart-container:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+/* Chart Canvas */
+canvas {
+    width: 100% !important;
+    height: 150px !important;
+}
+/* Updated Chart Styles */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.chart-box {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.chart-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.chart-box h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--dark);
+}
+
+.chart-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Remove fixed canvas dimensions */
+.chart-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+    
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 
 <body>
@@ -421,11 +546,13 @@
       <i class="fas fa-bars"></i>
     </div>
     <ul class="sidebar-menu">
-      <li class="active"><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Dashboard</span></a></li>
+      <li class="active"><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Dashboard</span></a>
+      </li>
       <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Predictions</span></a></li>
       <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Datasets</span></a></li>
       <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> History</span></a></li>
-      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
+      <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>
+      </li>
     </ul>
   </div>
 
@@ -445,6 +572,7 @@
     <div class="header">
       <h1>Welcome back, <span>{{ session['name'] }}</span></h1>
     </div>
+
     <div class="dashboard-metrics">
       <div class="metric-box total delay-1">
         <div class="metric-header">
@@ -453,12 +581,11 @@
           </div>
           <div>
             <div class="metric-title">Total Users</div>
-            <div class="metric-value">125,000</div>
-            
+            <div class="metric-value">{{ total_users }}</div>
           </div>
         </div>
       </div>
-      
+
       <div class="metric-box churned delay-2">
         <div class="metric-header">
           <div class="metric-icon churned">
@@ -466,12 +593,11 @@
           </div>
           <div>
             <div class="metric-title">Churned Users</div>
-            <div class="metric-value">35,000</div>
-            
+            <div class="metric-value">{{ churned_users }}</div>
           </div>
         </div>
       </div>
-      
+
       <div class="metric-box retained delay-3">
         <div class="metric-header">
           <div class="metric-icon retained">
@@ -479,47 +605,352 @@
           </div>
           <div>
             <div class="metric-title">Non-Churned Users</div>
-            <div class="metric-value">90,000</div>   
+            <div class="metric-value">{{ non_churned_users }}</div>
           </div>
         </div>
       </div>
     </div>
+
+  <!-- Charts Section -->
+<div class="dashboard-charts" style="display: flex; gap: 20px; margin-top: 30px;">
+  
+  <!-- Left Side: Donut Chart -->
+  <div class="chart-box" style="flex: 1; padding: 20px; height: 380px;">
+    <h2>Churn Distribution</h2>
+    <div style="height: 250px; position: relative; margin: 20px 0;">
+      <canvas id="churnDonut"></canvas>
+    </div>
+    <div style="margin-top: 20px; text-align: center;">
+      <div style="display: inline-block; margin: 0 15px;">
+       
+        
+      </div>
+      <div style="display: inline-block; margin: 0 15px;">
+       
+       
+      </div>
+    </div>
   </div>
 
-  <script>
-    // Sidebar toggle
-    const sidebar = document.getElementById('sidebar');
-    const menuIcon = document.getElementById('menu-icon');
+  <!-- Right Side: Line Chart on top, Bar Chart below -->
+  <div style="flex: 2; display: flex; flex-direction: column; gap: 20px;">
+    
+    <!-- Line Chart -->
+    <div class="chart-box" style="padding: 20px; height: 195px;">
+      <h2>Engagement Metrics</h2>
+      <div style="height: 140px; position: relative;">
+        <canvas id="weeklyLine"></canvas>
+      </div>
+    </div>
 
-    menuIcon.addEventListener('click', () => {
-      sidebar.classList.toggle('expanded');
+    <!-- Bar Chart -->
+    <div class="chart-box" style="padding: 20px; height: 180px;">
+      <h3 style="font-size: 14px; margin-bottom: 5px;">Top Churn Factors</h3>
+    <canvas id="churnFactors" style="height: 150px !important;"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+    <script>
+      // Sidebar toggle
+      const sidebar = document.getElementById('sidebar');
+      const menuIcon = document.getElementById('menu-icon');
+
+      menuIcon.addEventListener('click', () => {
+        sidebar.classList.toggle('expanded');
+      });
+
+      // Profile dropdown toggle
+      const profileToggle = document.getElementById('profile-toggle');
+      const dropdown = document.getElementById('profile-dropdown');
+
+      profileToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      });
+
+      // Close dropdown when clicking outside
+      window.addEventListener('click', function () {
+        dropdown.style.display = 'none';
+      });
+
+      // Prevent dropdown from closing when clicking inside it
+      dropdown.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+
+      // Responsive adjustments
+      window.addEventListener('resize', () => {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('expanded');
+        }
+      });
+    </script>
+
+    
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+      // Donut Chart: Current State (Compact)
+      new Chart(document.getElementById('churnDonut'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Churned', 'Retained'],
+          datasets: [{
+            data: [{{ churned_users }}, {{ non_churned_users }}],
+            backgroundColor: [
+              'rgba(239, 68, 68, 0.8)',
+              'rgba(16, 185, 129, 0.8)'
+            ],
+            borderColor: [
+              'rgba(239, 68, 68, 1)',
+              'rgba(16, 185, 129, 1)'
+            ],
+            borderWidth: 1,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                padding: 12,
+                font: {
+                  size: 10,
+                  family: 'Inter'
+                },
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: {
+                family: 'Inter',
+                size: 12
+              },
+              bodyFont: {
+                family: 'Inter',
+                size: 11
+              },
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Line Chart: Temporal Trends (Compact)
+      new Chart(document.getElementById('weeklyLine'), {
+        type: 'line',
+        data: {
+          labels: {{ months|safe }},
+          datasets: [
+            {
+              label: 'Churned',
+              data: {{ churned_hours|safe }},
+              borderColor: 'rgba(239, 68, 68, 1)',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: 'rgba(239, 68, 68, 1)',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Retained',
+              data: {{ retained_hours|safe }},
+              borderColor: 'rgba(16, 185, 129, 1)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: 'rgba(16, 185, 129, 1)',
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 12,
+                font: {
+                  size: 10,
+                  family: 'Inter'
+                },
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: {
+                family: 'Inter',
+                size: 12
+              },
+              bodyFont: {
+                family: 'Inter',
+                size: 11
+              },
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                font: {
+                  size: 9,
+                  family: 'Inter'
+                },
+                maxRotation: 45,
+                minRotation: 45
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                font: {
+                  size: 9,
+                  family: 'Inter'
+                },
+                callback: function(value) {
+                  return value + ' hrs';
+                }
+              }
+            }
+          }
+        }
+      });
+    
+      // Bar Chart: Root Causes (Compact)
+      new Chart(document.getElementById('churnFactors'), {
+        type: 'bar',
+        data: {
+          labels: {{ subscription_types|safe }},
+          datasets: [
+            {
+              label: 'Churn Rate',
+              data: {{ churn_rates|safe }},
+              backgroundColor: 'rgba(124, 58, 237, 0.8)',
+              borderColor: 'rgba(124, 58, 237, 1)',
+              borderWidth: 1,
+              borderRadius: 4,
+              hoverBackgroundColor: 'rgba(124, 58, 237, 1)'
+            },
+            {
+              label: 'Avg Skip Rate',
+              data: {{ skip_rates|safe }},
+              backgroundColor: 'rgba(148, 163, 184, 0.8)',
+              borderColor: 'rgba(148, 163, 184, 1)',
+              borderWidth: 1,
+              borderRadius: 4,
+              hoverBackgroundColor: 'rgba(148, 163, 184, 1)',
+              type: 'line',
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#fff'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 12,
+                font: {
+                  size: 10,
+                  family: 'Inter'
+                },
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: {
+                family: 'Inter',
+                size: 12
+              },
+              bodyFont: {
+                family: 'Inter',
+                size: 11
+              },
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label.includes('Rate')) {
+                    return label + ': ' + (context.raw * 100).toFixed(1) + '%';
+                  }
+                  return label + ': ' + context.raw.toFixed(2);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                font: {
+                  size: 9,
+                  family: 'Inter'
+                }
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                font: {
+                  size: 9,
+                  family: 'Inter'
+                },
+                callback: function(value) {
+                  return (value * 100) + '%';
+                }
+              },
+              min: 0,
+              max: 1
+            }
+          }
+        }
+      });
     });
-
-    // Profile dropdown toggle
-    const profileToggle = document.getElementById('profile-toggle');
-    const dropdown = document.getElementById('profile-dropdown');
-
-    profileToggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    });
-
-    // Close dropdown when clicking outside
-    window.addEventListener('click', function() {
-      dropdown.style.display = 'none';
-    });
-
-    // Prevent dropdown from closing when clicking inside it
-    dropdown.addEventListener('click', function(e) {
-      e.stopPropagation();
-    });
-
-    // Responsive adjustments
-    window.addEventListener('resize', () => {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.remove('expanded');
-      }
-    });
-  </script>
-</body>
-</html>
+    </script>
+    </body>
+    </html>

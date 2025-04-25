@@ -252,9 +252,9 @@ body {
           <i class="fas fa-bars"></i>
         </div>
         <ul class="sidebar-menu">
-          <li class="active"><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Dashboard</span></a></li>
+          <li ><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i><span> Dashboard</span></a></li>
           <li><a href="{{ url_for('prediction') }}"><i class="fas fa-chart-line"></i><span> Predictions</span></a></li>
-          <li><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Datasets</span></a></li>
+          <li class="active"><a href="{{ url_for('bulk_upload') }}"><i class="fas fa-database"></i><span> Datasets</span></a></li>
           <li><a href="{{ url_for('past_predictions') }}"><i class="fas fa-history"></i><span> History</span></a></li>
           <li class="logout"><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a></li>
         </ul>
