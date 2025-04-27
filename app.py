@@ -110,6 +110,10 @@ def signup_form():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Redirect to dashboard if already logged in
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -128,16 +132,26 @@ def login():
                 session['user_id'] = user['id']
                 session['username'] = user['username']
                 session['name'] = user['name']
-                session['organization'] = user['organization']  # Add organization to session
-                return redirect(url_for('dashboard'))
+                session['organization'] = user['organization']
+                
+                # Create fresh dashboard response with no-cache headers
+                response = redirect(url_for('dashboard'))
+                response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+                return response
             else:
                 flash('Invalid username or password', 'error')
                 return redirect(url_for('login'))
+        except Exception as e:
+            flash('Login error. Please try again.', 'error')
+            return redirect(url_for('login'))
         finally:
             cur.close()
             conn.close()
     
-    return render_template('login.html')
+    # GET request - render login page with cache prevention
+    response = make_response(render_template('login.html'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return response
 
 # Initialize Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -273,6 +287,17 @@ def analysis_dashboard():
                 'not_churn': [float(x) for x in df[df['prediction'] == 'Not Churn']['engagement_score'].tolist()] if 'engagement_score' in df.columns else [],
                 'churn': [float(x) for x in df[df['prediction'] == 'Churn']['engagement_score'].tolist()] if 'engagement_score' in df.columns else []
             },
+            'payment_plan_data': {
+                'plans': [str(x) for x in df['payment_plan'].unique().tolist()] if 'payment_plan' in df.columns else [],
+                'not_churn': [
+                    int(len(df[(df['prediction'] == 'Not Churn') & (df['payment_plan'] == t)]))
+                    for t in df['payment_plan'].unique()
+                ] if 'payment_plan' in df.columns else [],
+                'churn': [
+                    int(len(df[(df['prediction'] == 'Churn') & (df['payment_plan'] == t)]))
+                    for t in df['payment_plan'].unique()
+                ] if 'payment_plan' in df.columns else []
+            },
             'subscription_data': {
                 'types': [str(x) for x in df['subscription_type'].unique().tolist()] if 'subscription_type' in df.columns else [],
                 'not_churn': [
@@ -296,6 +321,21 @@ def analysis_dashboard():
             },
             'now': datetime.now()  # Keep as datetime object for template formatting
         }
+        print("DEBUG: Columns in DataFrame:", df.columns.tolist())
+        # Display Payment Plan Data in Console
+        payment_plan_data = analysis_data['payment_plan_data']
+        if payment_plan_data['plans']:
+            print("\nPayment Plan Data:")
+            print("------------------")
+            for i, plan in enumerate(payment_plan_data['plans']):
+                not_churn_count = payment_plan_data['not_churn'][i]
+                churn_count = payment_plan_data['churn'][i]
+                print(f"Plan: {plan}")
+                print(f"  Not Churn: {not_churn_count}")
+                print(f"  Churn: {churn_count}")
+                print()
+        else:
+            print("No payment plan data available.")
 
         print("DEBUG: Data preparation complete. Rendering template...")
         print(f"DEBUG: Analysis data keys: {analysis_data.keys()}")
@@ -305,6 +345,7 @@ def analysis_dashboard():
         print(f"DEBUG: Error in dashboard generation: {str(e)}", flush=True)
         flash(f'Error generating dashboard: {str(e)}', 'error')
         return redirect(url_for('prediction_results'))
+
 # Reset Password Route
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
@@ -351,33 +392,58 @@ def reset_password():
 
 @app.route('/dashboard')
 def dashboard():
+    # Authentication check
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
+    # Get username from session
+    username = session.get('username')
+    if not username:
+        flash('Please login to view your dashboard', 'error')
+        return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+    # Initialize variables with default values
+    dashboard_data = {
+        'name': session.get('name', ''),
+        'organization': session.get('organization', ''),
+        'total_users': 0,
+        'churned_users': 0,
+        'non_churned_users': 0,
+        'months': json.dumps([]),
+        'churned_hours': json.dumps([]),
+        'retained_hours': json.dumps([]),
+        'subscription_types': json.dumps([]),
+        'churn_rates': json.dumps([]),
+        'skip_rates': json.dumps([])
+    }
 
+    conn = None
+    cur = None
     try:
-        # Basic metrics
-        cur.execute("SELECT COUNT(*) FROM data")
-        total_users = cur.fetchone()[0]
+        conn = get_db_connection()
+        cur = conn.cursor()
 
-        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'churn'")
-        churned_users = cur.fetchone()[0]
+        # Basic metrics - filtered by username
+        cur.execute("SELECT COUNT(*) FROM data WHERE username = %s", (username,))
+        dashboard_data['total_users'] = cur.fetchone()[0] or 0
 
-        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'not churn'")
-        non_churned_users = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'churn' AND username = %s", (username,))
+        dashboard_data['churned_users'] = cur.fetchone()[0] or 0
 
-        # Temporal trends - monthly averages by churn status
+        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'not churn' AND username = %s", (username,))
+        dashboard_data['non_churned_users'] = cur.fetchone()[0] or 0
+
+        # Temporal trends - monthly averages by churn status (filtered by username)
         cur.execute("""
             SELECT 
                 DATE_TRUNC('month', signup_date) as month,
                 AVG(weekly_hours) as avg_hours,
                 prediction
             FROM data
+            WHERE username = %s
             GROUP BY month, prediction
             ORDER BY month
-        """)
+        """, (username,))
         trend_data = cur.fetchall()
         
         # Process trend data
@@ -391,42 +457,56 @@ def dashboard():
                 months.append(row[0].strftime('%b %Y'))
                 current_month = row[0]
             
-            if row[2].lower() == 'churn':
-                churned_hours.append(float(row[1]))
+            if row[2] and row[2].lower() == 'churn':
+                churned_hours.append(float(row[1]) if row[1] else 0)
             else:
-                retained_hours.append(float(row[1]))
+                retained_hours.append(float(row[1]) if row[1] else 0)
 
-        # Root causes - top factors
+        dashboard_data['months'] = json.dumps(months)
+        dashboard_data['churned_hours'] = json.dumps(churned_hours)
+        dashboard_data['retained_hours'] = json.dumps(retained_hours)
+
+        # Root causes - top factors (filtered by username)
         cur.execute("""
             SELECT 
                 subscription_type,
-                AVG(song_skip_rate) as avg_skip_rate,
-                COUNT(*) filter (WHERE prediction = 'Churn')::float / COUNT(*) as churn_rate
+                AVG(COALESCE(song_skip_rate, 0)) as avg_skip_rate,
+                COUNT(*) filter (WHERE prediction = 'Churn')::float / NULLIF(COUNT(*), 0) as churn_rate
             FROM data
+            WHERE username = %s
             GROUP BY subscription_type
-            ORDER BY churn_rate DESC
+            ORDER BY churn_rate DESC NULLS LAST
             LIMIT 5
-        """)
+        """, (username,))
         churn_factors = cur.fetchall()
 
-    finally:
-        cur.close()
-        conn.close()
+        dashboard_data['subscription_types'] = json.dumps([row[0] for row in churn_factors if row[0]])
+        dashboard_data['churn_rates'] = json.dumps([float(row[2]) if row[2] else 0 for row in churn_factors])
+        dashboard_data['skip_rates'] = json.dumps([float(row[1]) if row[1] else 0 for row in churn_factors])
 
-    return render_template(
-        'dashboard.html',
-        name=session['name'],
-        organization=session['organization'],
-        total_users=total_users,
-        churned_users=churned_users,
-        non_churned_users=non_churned_users,
-        months=json.dumps(months),
-        churned_hours=json.dumps(churned_hours),
-        retained_hours=json.dumps(retained_hours),
-        subscription_types=json.dumps([row[0] for row in churn_factors]),
-        churn_rates=json.dumps([float(row[2]) for row in churn_factors]),
-        skip_rates=json.dumps([float(row[1]) for row in churn_factors])
-    )
+    except Exception as e:
+        flash('Error loading dashboard data', 'error')
+        app.logger.error(f"Dashboard error: {str(e)}")
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+    # Create response with security headers
+    response = make_response(render_template('dashboard.html', **dashboard_data))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+@app.after_request
+def add_security_headers(response):
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Cache-Control'] = 'no-store, must-revalidate'
+    return response
+    
 from psycopg2.extras import execute_values
 
 @app.route('/bulk_upload', methods=['GET', 'POST'])
@@ -454,7 +534,7 @@ def bulk_upload():
             ]
             missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
             if missing:
-                flash(f"Missing columns: {', '.join(missing)}", 'error')
+                flash(f"The uploaded file is missing these required columns: {', '.join(missing)}. Please upload a correct CSV file.", 'error')
                 return redirect(request.url)
 
             # 2) Keep a copy for display + DB insert
@@ -478,7 +558,6 @@ def bulk_upload():
             df.drop(columns=['signup_date'], inplace=True)
 
             # 5) One-hot & ordinal encode, scale, predict
-            # (same as before)
             categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
             df_cat = df[categorical_features]
             df_cat = df_cat.reindex(
@@ -512,6 +591,7 @@ def bulk_upload():
             dataset_name = file.filename
             source_type = 'dataset'
             upload_time = datetime.now()  # Upload timestamp
+            username = session.get('username')  # Get username from session
 
             # 9) Insert the data into the database
             columns_to_store = [
@@ -519,11 +599,15 @@ def bulk_upload():
                 'num_subscription_pauses', 'weekly_hours', 'average_session_length',
                 'song_skip_rate', 'weekly_songs_played', 'weekly_unique_songs',
                 'notifications_clicked', 'customer_service_inquiries', 'engagement_score',
-                'skip_rate_per_session', 'signup_date', 'prediction', 'dataset_name', 'upload_time', 'source_type'
+                'skip_rate_per_session', 'signup_date', 'prediction', 
+                'dataset_name', 'upload_time', 'source_type', 'username'
             ]
+            
+            # Add metadata columns to the dataframe
             df_display['dataset_name'] = dataset_name
             df_display['upload_time'] = upload_time
             df_display['source_type'] = source_type
+            df_display['username'] = username  # Add username to each record
 
             df_to_store = df_display[columns_to_store]
             records = [tuple(row) for row in df_to_store.to_numpy()]
@@ -535,14 +619,14 @@ def bulk_upload():
                   song_skip_rate, weekly_songs_played, weekly_unique_songs,
                   notifications_clicked, customer_service_inquiries, engagement_score,
                   skip_rate_per_session, signup_date, prediction,
-                  dataset_name, upload_time, source_type
+                  dataset_name, upload_time, source_type, username
                 ) VALUES %s
             """
 
             conn = get_db_connection()
             cur = conn.cursor()
             try:
-                print(f"Attempting to insert {len(records)} records…")
+                print(f"Attempting to insert {len(records)} records...")
                 execute_values(cur, insert_query, records)
                 conn.commit()
                 print("✅ Insert successful!")
@@ -624,15 +708,23 @@ def download_template():
 
 @app.route('/past_predictions')
 def past_predictions():
+    # Get username from session
+    username = session.get('username')
+    if not username:
+        flash('Please login to view your predictions', 'error')
+        return redirect(url_for('login'))
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Modify the query to return unique dataset_name and upload_time combinations
+    # Query modified to filter by username and get distinct datasets
     cur.execute("""
         SELECT DISTINCT dataset_name, upload_time, source_type 
         FROM data 
+        WHERE username = %s
         ORDER BY upload_time DESC
-    """)  # Using DISTINCT to fetch unique combinations of dataset_name and upload_time
+    """, (username,))  # Parameterized query for security
+    
     past_predictions = cur.fetchall()
     cur.close()
     conn.close()
@@ -722,117 +814,122 @@ from datetime import datetime
 @app.route('/predict', methods=['POST'])
 def predict():
     if request.method == 'POST':
-        raw_data = {
-            'age': request.form['age'],
-            'location': request.form['location'],
-            'subscription_type': request.form['subscription_type'],
-            'payment_plan': request.form['payment_plan'],
-            'payment_method': request.form['payment_method'],
-            'num_subscription_pauses': request.form['num_subscription_pauses'],
-            'weekly_hours': request.form['weekly_hours'],
-            'average_session_length': request.form['average_session_length'],
-            'song_skip_rate': request.form['song_skip_rate'],
-            'weekly_songs_played': request.form['weekly_songs_played'],
-            'weekly_unique_songs': request.form['weekly_unique_songs'],
-            'notifications_clicked': request.form['notifications_clicked'],
-            'customer_service_inquiries': request.form['customer_service_inquiries'],
-            'signup_date': request.form['signup_date']
-        }
-        weekly_hours = float(raw_data['weekly_hours'])
-        weekly_songs = float(raw_data['weekly_songs_played'])
-        avg_session = float(raw_data['average_session_length'])
-        skip_rate = float(raw_data['song_skip_rate'])
+        try:
+            # Get form data
+            raw_data = {
+                'age': request.form['age'],
+                'location': request.form['location'],
+                'subscription_type': request.form['subscription_type'],
+                'payment_plan': request.form['payment_plan'],
+                'payment_method': request.form['payment_method'],
+                'num_subscription_pauses': request.form['num_subscription_pauses'],
+                'weekly_hours': request.form['weekly_hours'],
+                'average_session_length': request.form['average_session_length'],
+                'song_skip_rate': request.form['song_skip_rate'],
+                'weekly_songs_played': request.form['weekly_songs_played'],
+                'weekly_unique_songs': request.form['weekly_unique_songs'],
+                'notifications_clicked': request.form['notifications_clicked'],
+                'customer_service_inquiries': request.form['customer_service_inquiries'],
+                'signup_date': request.form['signup_date']
+            }
 
-        # --- CALCULATE METRICS (MUST MATCH ML MODEL) ---
-        engagement_score = weekly_hours * weekly_songs * avg_session
-        skip_rate_per_session = skip_rate / avg_session if avg_session > 0 else 0  # Avoid division by zero
+            # Calculate derived metrics
+            weekly_hours = float(raw_data['weekly_hours'])
+            weekly_songs = float(raw_data['weekly_songs_played'])
+            avg_session = float(raw_data['average_session_length'])
+            skip_rate = float(raw_data['song_skip_rate'])
 
-        # --- DEBUG: PRINT VALUES ---
-        print(f"""
-        [DEBUG] Inputs:
-        - Weekly Hours: {weekly_hours}
-        - Weekly Songs Played: {weekly_songs}
-        - Avg Session Length: {avg_session}
-        - Skip Rate: {skip_rate}
+            engagement_score = weekly_hours * weekly_songs * avg_session
+            skip_rate_per_session = skip_rate / avg_session if avg_session > 0 else 0
 
-        [DEBUG] Calculations:
-        - Engagement Score: {engagement_score} (Expected: {weekly_hours * weekly_songs * avg_session})
-        - Skip Rate Per Session: {skip_rate_per_session} (Expected: {skip_rate / avg_session if avg_session > 0 else 'N/A'})
-        """)
-        input_data = {
-            **raw_data,
-            'engagement_score': engagement_score,
-            'skip_rate_per_session': skip_rate_per_session
-        }
+            # Prepare complete data dictionary
+            input_data = {
+                **raw_data,
+                'engagement_score': engagement_score,
+                'skip_rate_per_session': skip_rate_per_session
+            }
 
-        # Convert signup date to days_since_signup
-        today = datetime.today()
-        signup_date = datetime.strptime(input_data['signup_date'], "%Y-%m-%d")  # Assuming format 'YYYY-MM-DD'
-        input_data['days_since_signup'] = (today - signup_date).days  # Convert to integer
+            # Convert to DataFrame for prediction
+            df = pd.DataFrame([input_data])
 
-        # Convert to DataFrame
-        df = pd.DataFrame([input_data])
+            # --- PREDICTION LOGIC (same as before) ---
+            categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
+            df_categorical = df[categorical_features]
+            df_categorical = df_categorical.reindex(columns=onehot_encoder.feature_names_in_, fill_value="Unknown")
+            df_encoded = pd.DataFrame(onehot_encoder.transform(df_categorical).toarray(),
+                                    columns=onehot_encoder.get_feature_names_out())
+            df_encoded = df_encoded.reindex(columns=onehot_encoder.get_feature_names_out(), fill_value=0)
 
-        # Debugging: Print the received DataFrame columns
-        print("Received DataFrame columns:", df.columns.tolist())
+            if 'customer_service_inquiries' in df.columns:
+                df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
 
-        # Define categorical features
-        categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
+            df.drop(columns=categorical_features, errors='ignore', inplace=True)
+            df = pd.concat([df, df_encoded], axis=1)
+            df = df.reindex(columns=scaler.feature_names_in_, fill_value=0)
+            df_scaled = scaler.transform(df)
+            df_scaled = pd.DataFrame(df_scaled, columns=scaler.feature_names_in_)
+            df_scaled.columns = model.feature_name_
+            prediction = model.predict(df_scaled)
+            result = 'Churn' if prediction[0] == 1 else 'Not Churn'
 
-        # Check if categorical columns exist in DataFrame
-        missing_cols = [col for col in categorical_features if col not in df.columns]
-        if missing_cols:
-            print(" Missing Categorical Columns:", missing_cols)
-            return "Error: Missing required input fields", 400  # Return error message
+            # --- DATABASE INSERTION ---
+            # Get next form number
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # Get current max form number
+            cur.execute("""SELECT MAX(CAST(SUBSTRING(dataset_name FROM 5) AS INTEGER)) FROM data WHERE source_type = 'form'""")
+            max_num = cur.fetchone()[0] or 0
+            dataset_name = f"form{max_num + 1}"
+            
+            # Prepare data for insertion
+            insert_data = {
+                **input_data,
+                'prediction': result,
+                'dataset_name': dataset_name,
+                'upload_time': datetime.now(),
+                'source_type': 'form',
+                'username' :session.get('username')
+            }
+            
+            # Convert types to match database
+            insert_data['age'] = int(insert_data['age'])
+            insert_data['num_subscription_pauses'] = int(insert_data['num_subscription_pauses'])
+            insert_data['weekly_songs_played'] = int(insert_data['weekly_songs_played'])
+            insert_data['weekly_unique_songs'] = int(insert_data['weekly_unique_songs'])
+            insert_data['notifications_clicked'] = int(insert_data['notifications_clicked'])
+            
+            # Execute insert
+            insert_query = """
+                INSERT INTO data (
+                    age, location, subscription_type, payment_plan, payment_method,
+                    num_subscription_pauses, weekly_hours, average_session_length,
+                    song_skip_rate, weekly_songs_played, weekly_unique_songs,
+                    notifications_clicked, customer_service_inquiries, engagement_score,
+                    skip_rate_per_session, signup_date, prediction,
+                    dataset_name, upload_time, source_type,username
+                ) VALUES (
+                    %(age)s, %(location)s, %(subscription_type)s, %(payment_plan)s, %(payment_method)s,
+                    %(num_subscription_pauses)s, %(weekly_hours)s, %(average_session_length)s,
+                    %(song_skip_rate)s, %(weekly_songs_played)s, %(weekly_unique_songs)s,
+                    %(notifications_clicked)s, %(customer_service_inquiries)s, %(engagement_score)s,
+                    %(skip_rate_per_session)s, %(signup_date)s, %(prediction)s,
+                    %(dataset_name)s, %(upload_time)s, %(source_type)s,%(username)s
+                )
+            """
+            
+            cur.execute(insert_query, insert_data)
+            conn.commit()
+            
+            return render_template('prediction_result.html', prediction=result)
+            
 
-        # One-hot encode categorical features (only if columns exist)
-        df_categorical = df[categorical_features]
-
-        # Ensure order matches fitted encoder
-        df_categorical = df_categorical.reindex(columns=onehot_encoder.feature_names_in_, fill_value="Unknown")
-
-        # Transform categorical features
-        df_encoded = pd.DataFrame(onehot_encoder.transform(df_categorical).toarray(),
-                          columns=onehot_encoder.get_feature_names_out())
-        df_encoded = df_encoded.reindex(columns=onehot_encoder.get_feature_names_out(), fill_value=0)  
-
-
-        # Encode ordinal feature
-        if 'customer_service_inquiries' in df.columns:
-            df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
-        else:
-            print(" 'customer_service_inquiries' is missing!")
-
-        # Drop original categorical columns
-        df.drop(columns=categorical_features, errors='ignore', inplace=True)
-
-        # Concatenate encoded categorical features
-        df = pd.concat([df, df_encoded], axis=1)
-
-        # Ensure feature order matches what was used during training
-        df = df.reindex(columns=scaler.feature_names_in_, fill_value=0)
-
-        # Scale numerical features
-        df_scaled = scaler.transform(df)
-        df_scaled = pd.DataFrame(df_scaled, columns=scaler.feature_names_in_)
-
-        # Debugging: Check final feature names before renaming
-        print(" Final Features Sent to Model:", df_scaled.columns.tolist())
-        print("Processed DataFrame columns:", df_scaled.columns.tolist())
-        print("Expected Model Columns:", model.feature_name_)
-
-        # Rename processed DataFrame columns to match model expectations
-        df_scaled.columns = model.feature_name_
-
-        # Debugging: Confirm renaming is correct
-        print("Renamed Processed DataFrame columns:", df_scaled.columns.tolist())
-
-        # Make prediction
-        prediction = model.predict(df_scaled)
-
-        # Return result
-        result = 'Churn' if prediction[0] == 1 else 'Not Churn'
-        return render_template('prediction_result.html', prediction=result)
+            
+        finally:
+            if 'cur' in locals():
+                cur.close()
+            if 'conn' in locals():
+                conn.close()
     
 @app.route('/logout')
 def logout():
