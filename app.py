@@ -28,7 +28,7 @@ app.secret_key = 'your_secret_key'  # Keep this consistent
 # Database connection
 def get_db_connection():
     conn = psycopg2.connect(
-        dbname="churnprediction",
+        dbname="churn_prediction",
         user="postgres",
         password="gowri",
         host="localhost",
