@@ -287,6 +287,17 @@ def analysis_dashboard():
                 'not_churn': [float(x) for x in df[df['prediction'] == 'Not Churn']['engagement_score'].tolist()] if 'engagement_score' in df.columns else [],
                 'churn': [float(x) for x in df[df['prediction'] == 'Churn']['engagement_score'].tolist()] if 'engagement_score' in df.columns else []
             },
+            'payment_plan_data': {
+                'plans': [str(x) for x in df['payment_plan'].unique().tolist()] if 'payment_plan' in df.columns else [],
+                'not_churn': [
+                    int(len(df[(df['prediction'] == 'Not Churn') & (df['payment_plan'] == t)]))
+                    for t in df['payment_plan'].unique()
+                ] if 'payment_plan' in df.columns else [],
+                'churn': [
+                    int(len(df[(df['prediction'] == 'Churn') & (df['payment_plan'] == t)]))
+                    for t in df['payment_plan'].unique()
+                ] if 'payment_plan' in df.columns else []
+            },
             'subscription_data': {
                 'types': [str(x) for x in df['subscription_type'].unique().tolist()] if 'subscription_type' in df.columns else [],
                 'not_churn': [
@@ -310,6 +321,21 @@ def analysis_dashboard():
             },
             'now': datetime.now()  # Keep as datetime object for template formatting
         }
+        print("DEBUG: Columns in DataFrame:", df.columns.tolist())
+        # Display Payment Plan Data in Console
+        payment_plan_data = analysis_data['payment_plan_data']
+        if payment_plan_data['plans']:
+            print("\nPayment Plan Data:")
+            print("------------------")
+            for i, plan in enumerate(payment_plan_data['plans']):
+                not_churn_count = payment_plan_data['not_churn'][i]
+                churn_count = payment_plan_data['churn'][i]
+                print(f"Plan: {plan}")
+                print(f"  Not Churn: {not_churn_count}")
+                print(f"  Churn: {churn_count}")
+                print()
+        else:
+            print("No payment plan data available.")
 
         print("DEBUG: Data preparation complete. Rendering template...")
         print(f"DEBUG: Analysis data keys: {analysis_data.keys()}")
@@ -319,6 +345,7 @@ def analysis_dashboard():
         print(f"DEBUG: Error in dashboard generation: {str(e)}", flush=True)
         flash(f'Error generating dashboard: {str(e)}', 'error')
         return redirect(url_for('prediction_results'))
+
 # Reset Password Route
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
@@ -368,6 +395,12 @@ def dashboard():
     # Authentication check
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
+    # Get username from session
+    username = session.get('username')
+    if not username:
+        flash('Please login to view your dashboard', 'error')
+        return redirect(url_for('login'))
 
     # Initialize variables with default values
     dashboard_data = {
@@ -390,26 +423,27 @@ def dashboard():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Basic metrics
-        cur.execute("SELECT COUNT(*) FROM data")
+        # Basic metrics - filtered by username
+        cur.execute("SELECT COUNT(*) FROM data WHERE username = %s", (username,))
         dashboard_data['total_users'] = cur.fetchone()[0] or 0
 
-        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'churn'")
+        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'churn' AND username = %s", (username,))
         dashboard_data['churned_users'] = cur.fetchone()[0] or 0
 
-        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'not churn'")
+        cur.execute("SELECT COUNT(*) FROM data WHERE LOWER(prediction) = 'not churn' AND username = %s", (username,))
         dashboard_data['non_churned_users'] = cur.fetchone()[0] or 0
 
-        # Temporal trends - monthly averages by churn status
+        # Temporal trends - monthly averages by churn status (filtered by username)
         cur.execute("""
             SELECT 
                 DATE_TRUNC('month', signup_date) as month,
                 AVG(weekly_hours) as avg_hours,
                 prediction
             FROM data
+            WHERE username = %s
             GROUP BY month, prediction
             ORDER BY month
-        """)
+        """, (username,))
         trend_data = cur.fetchall()
         
         # Process trend data
@@ -432,17 +466,18 @@ def dashboard():
         dashboard_data['churned_hours'] = json.dumps(churned_hours)
         dashboard_data['retained_hours'] = json.dumps(retained_hours)
 
-        # Root causes - top factors
+        # Root causes - top factors (filtered by username)
         cur.execute("""
             SELECT 
                 subscription_type,
                 AVG(COALESCE(song_skip_rate, 0)) as avg_skip_rate,
                 COUNT(*) filter (WHERE prediction = 'Churn')::float / NULLIF(COUNT(*), 0) as churn_rate
             FROM data
+            WHERE username = %s
             GROUP BY subscription_type
             ORDER BY churn_rate DESC NULLS LAST
             LIMIT 5
-        """)
+        """, (username,))
         churn_factors = cur.fetchall()
 
         dashboard_data['subscription_types'] = json.dumps([row[0] for row in churn_factors if row[0]])
@@ -499,7 +534,7 @@ def bulk_upload():
             ]
             missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
             if missing:
-                flash(f"Missing columns: {', '.join(missing)}", 'error')
+                flash(f"The uploaded file is missing these required columns: {', '.join(missing)}. Please upload a correct CSV file.", 'error')
                 return redirect(request.url)
 
             # 2) Keep a copy for display + DB insert
@@ -523,7 +558,6 @@ def bulk_upload():
             df.drop(columns=['signup_date'], inplace=True)
 
             # 5) One-hot & ordinal encode, scale, predict
-            # (same as before)
             categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
             df_cat = df[categorical_features]
             df_cat = df_cat.reindex(
@@ -557,6 +591,7 @@ def bulk_upload():
             dataset_name = file.filename
             source_type = 'dataset'
             upload_time = datetime.now()  # Upload timestamp
+            username = session.get('username')  # Get username from session
 
             # 9) Insert the data into the database
             columns_to_store = [
@@ -564,11 +599,15 @@ def bulk_upload():
                 'num_subscription_pauses', 'weekly_hours', 'average_session_length',
                 'song_skip_rate', 'weekly_songs_played', 'weekly_unique_songs',
                 'notifications_clicked', 'customer_service_inquiries', 'engagement_score',
-                'skip_rate_per_session', 'signup_date', 'prediction', 'dataset_name', 'upload_time', 'source_type'
+                'skip_rate_per_session', 'signup_date', 'prediction', 
+                'dataset_name', 'upload_time', 'source_type', 'username'
             ]
+            
+            # Add metadata columns to the dataframe
             df_display['dataset_name'] = dataset_name
             df_display['upload_time'] = upload_time
             df_display['source_type'] = source_type
+            df_display['username'] = username  # Add username to each record
 
             df_to_store = df_display[columns_to_store]
             records = [tuple(row) for row in df_to_store.to_numpy()]
@@ -580,14 +619,14 @@ def bulk_upload():
                   song_skip_rate, weekly_songs_played, weekly_unique_songs,
                   notifications_clicked, customer_service_inquiries, engagement_score,
                   skip_rate_per_session, signup_date, prediction,
-                  dataset_name, upload_time, source_type
+                  dataset_name, upload_time, source_type, username
                 ) VALUES %s
             """
 
             conn = get_db_connection()
             cur = conn.cursor()
             try:
-                print(f"Attempting to insert {len(records)} records…")
+                print(f"Attempting to insert {len(records)} records...")
                 execute_values(cur, insert_query, records)
                 conn.commit()
                 print("✅ Insert successful!")
@@ -669,15 +708,23 @@ def download_template():
 
 @app.route('/past_predictions')
 def past_predictions():
+    # Get username from session
+    username = session.get('username')
+    if not username:
+        flash('Please login to view your predictions', 'error')
+        return redirect(url_for('login'))
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Modify the query to return unique dataset_name and upload_time combinations
+    # Query modified to filter by username and get distinct datasets
     cur.execute("""
         SELECT DISTINCT dataset_name, upload_time, source_type 
         FROM data 
+        WHERE username = %s
         ORDER BY upload_time DESC
-    """)  # Using DISTINCT to fetch unique combinations of dataset_name and upload_time
+    """, (username,))  # Parameterized query for security
+    
     past_predictions = cur.fetchall()
     cur.close()
     conn.close()
@@ -841,7 +888,8 @@ def predict():
                 'prediction': result,
                 'dataset_name': dataset_name,
                 'upload_time': datetime.now(),
-                'source_type': 'form'
+                'source_type': 'form',
+                'username' :session.get('username')
             }
             
             # Convert types to match database
@@ -859,14 +907,14 @@ def predict():
                     song_skip_rate, weekly_songs_played, weekly_unique_songs,
                     notifications_clicked, customer_service_inquiries, engagement_score,
                     skip_rate_per_session, signup_date, prediction,
-                    dataset_name, upload_time, source_type
+                    dataset_name, upload_time, source_type,username
                 ) VALUES (
                     %(age)s, %(location)s, %(subscription_type)s, %(payment_plan)s, %(payment_method)s,
                     %(num_subscription_pauses)s, %(weekly_hours)s, %(average_session_length)s,
                     %(song_skip_rate)s, %(weekly_songs_played)s, %(weekly_unique_songs)s,
                     %(notifications_clicked)s, %(customer_service_inquiries)s, %(engagement_score)s,
                     %(skip_rate_per_session)s, %(signup_date)s, %(prediction)s,
-                    %(dataset_name)s, %(upload_time)s, %(source_type)s
+                    %(dataset_name)s, %(upload_time)s, %(source_type)s,%(username)s
                 )
             """
             
