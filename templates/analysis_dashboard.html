@@ -287,10 +287,7 @@ body {
                 <h3 class="text-gray-500 font-medium">Churn Rate</h3>
                 <p class="text-2xl font-bold text-red-500">{{ metrics.churn_rate }}%</p>
             </div>
-            <div class="dashboard-card">
-                <h3 class="text-gray-500 font-medium">Avg Engagement</h3>
-                <p class="text-2xl font-bold">{{ metrics.avg_engagement }}</p>
-            </div>
+           
             <div class="dashboard-card">
                 <h3 class="text-gray-500 font-medium">Avg Weekly Hours</h3>
                 <p class="text-2xl font-bold">{{ metrics.avg_weekly_hours }}</p>
@@ -311,23 +308,21 @@ body {
                     <canvas id="subscriptionChart"></canvas>
                 </div>
             </div>
+            
+            <!-- Chart 6: Payment Plan Churn Rate (Pie Chart) -->
+<div class="dashboard-card">
+  <h2 class="text-xl font-semibold mb-4">Payment Plan Churn Rate</h2>
+  <div class="chart-container">
+      <canvas id="paymentPlanChart"></canvas>
+  </div>
+</div>
+
             <!-- Chart 2: Age Distribution (Box Plot) -->
-            <div class="dashboard-card">
-                <h2 class="text-xl font-semibold mb-4">Age Distribution by Churn Status</h2>
-                <div class="chart-container">
-                    <canvas id="ageChart"></canvas>
-                </div>
-            </div>
-            <!-- Chart 3: Engagement vs Churn (Violin) -->
-            <div class="dashboard-card">
-                <h2 class="text-xl font-semibold mb-4">Engagement Score Distribution</h2>
-                <div class="chart-container">
-                    <canvas id="engagementChart"></canvas>
-                </div>
-            </div>
+       
+
            
             <!-- Chart 5: Weekly Hours vs Skip Rate (Scatter) -->
-            <div class="dashboard-card lg:col-span-2">
+            <div class="dashboard-card ">
                 <h2 class="text-xl font-semibold mb-4">Weekly Hours vs Skip Rate</h2>
                 <div class="chart-container">
                     <canvas id="scatterChart"></canvas>
@@ -429,49 +424,70 @@ body {
 });
 
 
-            // 2. Box Plot - Age Distribution
-            initChartSafe('ageChart', {
-                type: 'boxplot',
-                data: {
-                    labels: ['Not Churn', 'Churn'],
-                    datasets: [{
-                        label: 'Age Distribution',
-                        data: [
-                            debugChartData('Age Not Churn', JSON.parse('{{ age_data.not_churn | tojson | safe }}')),
-                            debugChartData('Age Churn', JSON.parse('{{ age_data.churn | tojson | safe }}'))
-                        ],
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
 
-            // 3. Violin Plot - Engagement Scores
-            initChartSafe('engagementChart', {
-                type: 'violin',
-                data: {
-                    labels: ['Not Churn', 'Churn'],
-                    datasets: [{
-                        label: 'Engagement Score',
-                        data: [
-                            debugChartData('Engagement Not Churn', JSON.parse('{{ engagement_data.not_churn | tojson | safe }}')),
-                            debugChartData('Engagement Churn', JSON.parse('{{ engagement_data.churn | tojson | safe }}'))
-                        ],
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
+// 6. Pie Chart - Payment Plan Churn Rate
+initChartSafe('paymentPlanChart', {
+    type: 'bar',
+    data: {
+        labels: debugChartData('Payment Plan Labels', JSON.parse('{{ payment_plan_data.plans | tojson | safe }}')),
+        datasets: [
+            {
+                label: 'Not Churn',
+                data: debugChartData('Payment Plan Not Churn Counts', JSON.parse('{{ payment_plan_data.not_churn | tojson | safe }}')),
+                backgroundColor: '#205781' // Blue for Not Churn
+            },
+            {
+                label: 'Churn',
+                data: debugChartData('Payment Plan Churn Counts', JSON.parse('{{ payment_plan_data.churn | tojson | safe }}')),
+                backgroundColor: '#3D90D7' // Red for Churn
+            }
+            
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        return `${context.dataset.label}: ${context.raw}`;
+                    }
                 }
-            });
+            }
+        },
+        
+        scales: {
+            x: {
+                stacked: false,
+                title: {
+                    display: true,
+                    text: 'Plan Types'
+                },
+                grid: {
+                    display: false // 🔥 Hide X-axis grid
+                }
+                
+            },
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Number of Users'
+                },
+                grid: {
+                    display: false // 🔥 Hide X-axis grid
+                }
+            }
+        }
+    }
+});
+
+
+
+
+
 
             // 4. Bar Chart - Subscription Types
             initChartSafe('subscriptionChart', {
