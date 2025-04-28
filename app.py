@@ -815,29 +815,48 @@ from datetime import datetime
 def predict():
     if request.method == 'POST':
         try:
-            # Get form data
-            raw_data = {
-                'age': request.form['age'],
-                'location': request.form['location'],
-                'subscription_type': request.form['subscription_type'],
-                'payment_plan': request.form['payment_plan'],
-                'payment_method': request.form['payment_method'],
-                'num_subscription_pauses': request.form['num_subscription_pauses'],
-                'weekly_hours': request.form['weekly_hours'],
-                'average_session_length': request.form['average_session_length'],
-                'song_skip_rate': request.form['song_skip_rate'],
-                'weekly_songs_played': request.form['weekly_songs_played'],
-                'weekly_unique_songs': request.form['weekly_unique_songs'],
-                'notifications_clicked': request.form['notifications_clicked'],
-                'customer_service_inquiries': request.form['customer_service_inquiries'],
-                'signup_date': request.form['signup_date']
+            # Default values dictionary
+            default_values = {
+                'age': '21',
+                'location': 'Montana',
+                'subscription_type': 'Free',
+                'payment_plan': 'Monthly',
+                'payment_method': 'Paypal',
+                'num_subscription_pauses': '2',
+                'weekly_hours': '16',
+                'average_session_length': '12',
+                'song_skip_rate': '2',
+                'weekly_songs_played': '25',
+                'weekly_unique_songs': '17',
+                'notifications_clicked': '3',
+                'customer_service_inquiries': 'Low',
+                'signup_date': '2017-01-01'
             }
 
-            # Calculate derived metrics
-            weekly_hours = float(raw_data['weekly_hours'])
-            weekly_songs = float(raw_data['weekly_songs_played'])
-            avg_session = float(raw_data['average_session_length'])
-            skip_rate = float(raw_data['song_skip_rate'])
+            # Get form data and replace empty/None values with defaults
+            raw_data = {
+                field: request.form.get(field, default_values[field]) or default_values[field]
+                for field in default_values
+            }
+
+            # Convert numerical fields to appropriate types
+            numerical_fields = [
+                'age', 'num_subscription_pauses', 'weekly_hours',
+                'average_session_length', 'song_skip_rate', 'weekly_songs_played',
+                'weekly_unique_songs', 'notifications_clicked'
+            ]
+
+            for field in numerical_fields:
+                try:
+                    raw_data[field] = float(raw_data[field])
+                except (ValueError, TypeError):
+                    raw_data[field] = float(default_values[field])
+
+            # Calculate derived features
+            weekly_hours = raw_data['weekly_hours']
+            weekly_songs = raw_data['weekly_songs_played']
+            avg_session = raw_data['average_session_length']
+            skip_rate = raw_data['song_skip_rate']
 
             engagement_score = weekly_hours * weekly_songs * avg_session
             skip_rate_per_session = skip_rate / avg_session if avg_session > 0 else 0
@@ -852,7 +871,7 @@ def predict():
             # Convert to DataFrame for prediction
             df = pd.DataFrame([input_data])
 
-            # --- PREDICTION LOGIC (same as before) ---
+            # --- PREDICTION LOGIC ---
             categorical_features = ['location', 'subscription_type', 'payment_plan', 'payment_method']
             df_categorical = df[categorical_features]
             df_categorical = df_categorical.reindex(columns=onehot_encoder.feature_names_in_, fill_value="Unknown")
@@ -860,8 +879,8 @@ def predict():
                                     columns=onehot_encoder.get_feature_names_out())
             df_encoded = df_encoded.reindex(columns=onehot_encoder.get_feature_names_out(), fill_value=0)
 
-            if 'customer_service_inquiries' in df.columns:
-                df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
+            # Apply ordinal encoding to 'customer_service_inquiries'
+            df[['customer_service_inquiries']] = ordinal_encoder.transform(df[['customer_service_inquiries']])
 
             df.drop(columns=categorical_features, errors='ignore', inplace=True)
             df = pd.concat([df, df_encoded], axis=1)
@@ -873,7 +892,6 @@ def predict():
             result = 'Churn' if prediction[0] == 1 else 'Not Churn'
 
             # --- DATABASE INSERTION ---
-            # Get next form number
             conn = get_db_connection()
             cur = conn.cursor()
             
@@ -889,7 +907,7 @@ def predict():
                 'dataset_name': dataset_name,
                 'upload_time': datetime.now(),
                 'source_type': 'form',
-                'username' :session.get('username')
+                'username': session.get('username')
             }
             
             # Convert types to match database
@@ -907,14 +925,14 @@ def predict():
                     song_skip_rate, weekly_songs_played, weekly_unique_songs,
                     notifications_clicked, customer_service_inquiries, engagement_score,
                     skip_rate_per_session, signup_date, prediction,
-                    dataset_name, upload_time, source_type,username
+                    dataset_name, upload_time, source_type, username
                 ) VALUES (
                     %(age)s, %(location)s, %(subscription_type)s, %(payment_plan)s, %(payment_method)s,
                     %(num_subscription_pauses)s, %(weekly_hours)s, %(average_session_length)s,
                     %(song_skip_rate)s, %(weekly_songs_played)s, %(weekly_unique_songs)s,
                     %(notifications_clicked)s, %(customer_service_inquiries)s, %(engagement_score)s,
                     %(skip_rate_per_session)s, %(signup_date)s, %(prediction)s,
-                    %(dataset_name)s, %(upload_time)s, %(source_type)s,%(username)s
+                    %(dataset_name)s, %(upload_time)s, %(source_type)s, %(username)s
                 )
             """
             
@@ -922,15 +940,15 @@ def predict():
             conn.commit()
             
             return render_template('prediction_result.html', prediction=result)
-            
-
-            
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Error in predict function: {str(e)}")
+            return render_template('error.html', error_message="An error occurred while processing your request.")
         finally:
             if 'cur' in locals():
                 cur.close()
             if 'conn' in locals():
                 conn.close()
-    
 @app.route('/logout')
 def logout():
     session.clear()
