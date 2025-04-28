@@ -361,7 +361,7 @@ def reset_password():
             return render_template('reset_password.html', email=email)
 
         # Password validation (without digit requirement)
-        password_pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z@$!%*?&]{8,}$'
+        password_pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}$'
         if not re.match(password_pattern, password):
             flash('Password must be at least 8 characters, with 1 uppercase, 1 lowercase, and 1 special character.', 'error')
             return render_template('reset_password.html', email=email)
