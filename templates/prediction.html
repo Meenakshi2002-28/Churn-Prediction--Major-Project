@@ -455,7 +455,7 @@
             <div class="form-header">
                 <h1>Customer Churn Prediction</h1>
             </div>
-            
+    
             <div class="form-content">
                 <form id="churnForm" action="{{ url_for('predict') }}" method="POST">
                     <div class="form-row">
@@ -463,12 +463,13 @@
                             <!-- Left Column (7 form groups) -->
                             <div class="form-group">
                                 <label for="age">Age:</label>
-                                <input type="number" class="form-control" id="age" name="age" required min="1">
+                                <input type="number" class="form-control" id="age" name="age" min="1">
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="location">Location:</label>
                                 <select class="form-control" id="location" name="location">
+                                    <option value="">-- Select Location --</option>
                                     <option value="Montana">Montana</option>
                                     <option value="New Jersey">New Jersey</option>
                                     <option value="Washington">Washington</option>
@@ -490,81 +491,86 @@
                                     <option value="North Dakota">North Dakota</option>
                                 </select>
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="subscription_type">Subscription Type:</label>
                                 <select class="form-control" id="subscription_type" name="subscription_type">
+                                    <option value="">-- Select Subscription Type --</option>
                                     <option value="Free">Free</option>
                                     <option value="Family">Family</option>
                                     <option value="Premium">Premium</option>
                                     <option value="Student">Student</option>
                                 </select>
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="payment_plan">Payment Plan:</label>
                                 <select class="form-control" id="payment_plan" name="payment_plan">
+                                    <option value="">-- Select Payment Plan --</option>
                                     <option value="Monthly">Monthly</option>
                                     <option value="Yearly">Yearly</option>
                                 </select>
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="payment_method">Payment Method:</label>
                                 <select class="form-control" id="payment_method" name="payment_method">
+                                    <option value="">-- Select Payment Method --</option>
                                     <option value="Paypal">Paypal</option>
                                     <option value="Credit Card">Credit Card</option>
                                     <option value="Apple Pay">Apple Pay</option>
                                     <option value="Debit Card">Debit Card</option>
                                 </select>
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="num_subscription_pauses">Number of Subscription Pauses:</label>
-                                <input type="number" class="form-control" id="num_subscription_pauses" name="num_subscription_pauses" required min="0">
+                                <input type="number" class="form-control" id="num_subscription_pauses" name="num_subscription_pauses" min="0">
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="signup_date">Signup Date:</label>
-                                <input type="date" class="form-control" id="signup_date" name="signup_date" required>
+                                <input type="date" class="form-control" id="signup_date" name="signup_date">
                             </div>
                         </div>
-
+    
                         <div class="form-column">
                             <!-- Right Column (7 form groups) -->
                             <div class="form-group">
                                 <label for="weekly_hours">Weekly Hours Spent:</label>
+                                <input type="number" class="form-control" id="weekly_hours" name="weekly_hours">
                                 <input type="number" class="form-control" id="weekly_hours" name="weekly_hours" step="any" required>
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="average_session_length">Average Session Length (minutes):</label>
                                 <input type="number" class="form-control" id="average_session_length" name="average_session_length" step="any" required>
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="song_skip_rate">Song Skip Rate:</label>
                                 <input type="number" class="form-control" id="song_skip_rate" name="song_skip_rate" step="any" required>
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="weekly_songs_played">Weekly Songs Played:</label>
-                                <input type="number" class="form-control" id="weekly_songs_played" name="weekly_songs_played" required>
+                                <input type="number" class="form-control" id="weekly_songs_played" name="weekly_songs_played">
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="weekly_unique_songs">Weekly Unique Songs:</label>
-                                <input type="number" class="form-control" id="weekly_unique_songs" name="weekly_unique_songs" required>
+                                <input type="number" class="form-control" id="weekly_unique_songs" name="weekly_unique_songs">
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="notifications_clicked">Notifications Clicked:</label>
-                                <input type="number" class="form-control" id="notifications_clicked" name="notifications_clicked" required>
+                                <input type="number" class="form-control" id="notifications_clicked" name="notifications_clicked">
                             </div>
-
+    
                             <div class="form-group">
                                 <label for="customer_service_inquiries">Customer Service Inquiries:</label>
                                 <select class="form-control" id="customer_service_inquiries" name="customer_service_inquiries">
+                                    <option value="">-- Select Inquiry Level --</option>
                                     <option value="Low">Low</option>
                                     <option value="Medium">Medium</option>
                                     <option value="High">High</option>
@@ -572,7 +578,7 @@
                             </div>
                         </div>
                     </div>
-                    
+    
                     <div class="form-footer">
                         <button type="submit" class="predict-btn">PREDICT</button>
                         <div id="result" class="result" style="display:none;"></div>
@@ -581,7 +587,7 @@
             </div>
         </div>
     </div>
-
+    
     <script>
         // Sidebar toggle
         const sidebar = document.getElementById('sidebar');
