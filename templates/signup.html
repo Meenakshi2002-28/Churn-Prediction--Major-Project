@@ -203,7 +203,7 @@
 
                     // Password validation
                     passwordInput.addEventListener('input', function () {
-                        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z@$!%*?&]{8,}$/;
+                        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}$/;
                         if (!passwordPattern.test(passwordInput.value)) {
                             passwordError.textContent = "Password must be at least 8 characters, with 1 uppercase, 1 lowercase, 1 special character.";
                         } else {
